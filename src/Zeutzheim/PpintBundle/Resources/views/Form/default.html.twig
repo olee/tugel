@@ -1,0 +1,232 @@
+{% use "form_div_layout.html.twig" %}
+
+{# ######################################################### #}
+
+{% block form_start %}
+{% spaceless %}
+	{% set attr = {class:'form-default'}|merge(attr) %}
+	{{ parent() }}
+{% endspaceless %}
+{% endblock form_start %}
+
+{# ######################################################### #}
+
+{% block form_row %}
+{% spaceless %}
+	{#{ dump(form.vars.block_prefixes) }#}
+	{#{ form.vars.block_prefixes.1 }#}
+	<div class="form-group{% if form.vars.block_prefixes.1 == 'collection' %} collection{% endif %}{% if not form.vars.valid %} has-error{% endif %}">
+		{% if form.vars.block_prefixes.1 == 'checkbox' %}
+			{{ form_label(form, null, {
+				insert_before: form_widget(form) ~ ' ', 
+				label_attr:{class:'checkbox'}
+			}) }}
+		{% else %}
+			{% if compound %}
+				{% if '^' == label|first %}
+					{% set compund_tag = 'h3' %}
+					{% set label = label|slice(1) %}
+				{% endif %}
+				{{ form_label(form, label, {
+					label_attr:{class:'control-label'},
+					tag: compund_tag is defined ? compund_tag : 'label',
+				}) }}
+			{% else %}
+				{{ form_label(form, null, {label_attr:{class:'control-label'}}) }}
+			{% endif %}
+			{{ form_errors(form) }}
+			{% if form.vars.block_prefixes.1 == 'text' or
+				form.vars.block_prefixes.1 == 'email' or
+				form.vars.block_prefixes.1 == 'integer' or
+				form.vars.block_prefixes.1 == 'money' or
+				form.vars.block_prefixes.1 == 'number' or
+				form.vars.block_prefixes.1 == 'password' or
+				form.vars.block_prefixes.1 == 'percent' or
+				form.vars.block_prefixes.1 == 'search' or
+				form.vars.block_prefixes.1 == 'url' or
+				form.vars.block_prefixes.1 == 'entity' or
+				form.vars.block_prefixes.1 == 'country' or
+				form.vars.block_prefixes.1 == 'language' or
+				form.vars.block_prefixes.1 == 'locale' or
+				form.vars.block_prefixes.1 == 'timezone' or
+				form.vars.block_prefixes.1 == 'date' or
+				form.vars.block_prefixes.1 == 'datetime' or
+				form.vars.block_prefixes.1 == 'time' or
+				form.vars.block_prefixes.1 == 'birthday' or
+				form.vars.block_prefixes.1 == 'checkbox' or
+				form.vars.block_prefixes.1 == 'file' or
+				form.vars.block_prefixes.1 == 'radio' or
+				form.vars.block_prefixes.1 == 'collection' %}
+				{{ form_widget(form, {'attr':{class:'form-control'}}) }}
+			{% else %}
+				{{ form_widget(form, {can_be_choice:true}) }}
+			{% endif %}
+		{% endif %}
+	</div>
+{% endspaceless %}
+{% endblock form_row %}
+
+{# ######################################################### #}
+
+{% block choice_widget %}
+{% spaceless %}
+	{% if expanded %}
+		{% set attr = attr|merge({class:'btn-group'}) %}
+		{{ block('choice_widget_expanded') }}
+	{% else %}
+		{% if can_be_choice is defined %}
+			{% set attr = attr|merge({class:'form-control'}) %}
+		{% endif %}
+		{{ block('choice_widget_collapsed') }}
+	{% endif %}
+{% endspaceless %}
+{% endblock choice_widget %}
+
+{# ######################################################### #}
+
+{% block choice_widget_expanded %}
+{% spaceless %}
+	<br><div {{ block('widget_container_attributes') }}>
+	{% for child in form %}
+		{{ form_label(child, null, {
+			insert_before: form_widget(child), 
+			label_attr:{class:'btn btn-default'}
+		}) }}
+	{% endfor %}
+	</div>
+{% endspaceless %}
+{% endblock choice_widget_expanded %}
+
+{# ######################################################### #}
+
+{% block form_label %}
+{% spaceless %}
+    {% if label is not sameas(false) %}
+        {% if not compound %}
+            {% set label_attr = label_attr|merge({'for': id}) %}
+        {% endif %}
+        {% if required %}
+            {% set label_attr = label_attr|merge({'class': (label_attr.class|default('') ~ ' required')|trim}) %}
+        {% endif %}
+        {% if label is empty %}
+            {% set label = name|humanize %}
+        {% endif %}
+        <{{ tag is defined ? tag : 'label' }}{% for attrname, attrvalue in label_attr %} {{ attrname }}="{{ attrvalue }}"{% endfor %}>
+        	{% if insert_before is defined %}{{ insert_before|raw }}{% endif %}
+        	{{ label|trans({}, translation_domain) }}
+        	{% if required and not compound and insert_before is not defined and insert_after is not defined %} *{% endif %}
+        	{% if insert_after is defined %}{{ insert_after|raw }}{% endif %}
+        </{{ tag is defined ? tag : 'label' }}>
+    {% endif %}
+{% endspaceless %}
+{% endblock form_label %}
+
+{# ######################################################### #}
+
+{% block collection_item_label %}
+{% spaceless %}
+	{{ form_label(child, null, {'label_attr':{class:'control-label'}}) }}
+{% endspaceless %}
+{% endblock collection_item_label %}
+
+{# ######################################################### #}
+
+{% block collection_item_attributes %}
+{% spaceless %}
+	data-id="{{ child.vars.name }}"
+	class="form-group collection-item fade in{% if not form.vars.valid %} has-error{% endif %}{% if allow_delete %} deletable{% endif %}"
+{% endspaceless %}
+{% endblock collection_item_attributes %}
+
+{# ######################################################### #}
+
+{% block collection_item %}
+{% spaceless %}
+	<div {{ block('collection_item_attributes') }}>
+		{{ block('collection_item_label') }}
+		{{ form_errors(child) }}
+		{% if allow_delete %}
+			<a class="btn btn-danger del-btn"><span class="glyphicon glyphicon-remove"> </span></a>
+		{% endif %}
+		{% if child.vars.compound %}
+			{{ form_widget(child) }}
+		{% else %}
+			{{ form_widget(child, {'attr':{class:'form-control'}}) }}
+		{% endif %}
+	</div>
+{% endspaceless %}
+{% endblock collection_item %}
+
+{# ######################################################### #}
+
+{% block collection_widget %}
+{% spaceless %}
+	{% if prototype is defined %}
+		{% set child = prototype %}
+		{% set attr = attr|merge({'data-prototype': block('collection_item') }) %}
+	{% endif %}
+	{% set attr = attr|merge({class:'form-group collection-items'}) %}
+	<div {{ block('widget_container_attributes') }}>
+		{% if form.parent is empty %}
+			{{ form_errors(form) }}
+		{% endif %}
+		{% for child in form %}
+			{{ block('collection_item') }}
+		{% endfor %}
+		{{ form_rest(form) }}
+		{% if allow_add %}
+			<a class="btn btn-default add-btn"><span class="glyphicon glyphicon-plus"> </span></a>
+		{% endif %}
+	</div>
+	{% if allow_add %}
+		<br>
+	{% endif %}
+	<script>setupFormCollection('#{{ form.vars.id }}');</script>
+{% endspaceless %}
+{% endblock collection_widget %}
+
+{# ######################################################### #}
+
+{% block form_errors %}
+{% spaceless %}
+	{% if errors|length > 0 %}
+		{% for error in errors %}
+			<label class="control-label error-label">{{ error.message }}</label>
+		{% endfor %}
+	{% endif %}
+	{% for flashMessage in app.session.flashbag.get('formerror_' ~ id) %}
+			<label class="control-label error-label">{{ flashMessage }}</label>
+	{% endfor %}
+	{#% for child in form %}{% for flashMessage in app.session.flashbag.get('formerror_' ~ child.vars.id) %}
+			<label class="control-label error-label">{{ flashMessage }}</label>
+	{% endfor %}{% endfor %#}
+{% endspaceless %}
+{% endblock form_errors %}
+
+{# ######################################################### #}
+
+{% block button_row %}
+{% spaceless %}
+	{{ form_widget(form) }}
+{% endspaceless %}
+{% endblock button_row %}
+
+{# ######################################################### #}
+
+{% block button_widget %}
+	{% if attr.class is defined %}
+		{% set attr = attr|merge({class:'btn btn-primary btn-row ' ~ attr.class}) %}
+	{% else %}
+		{% set attr = attr|merge({class:'btn btn-primary btn-row'}) %}
+	{% endif %}
+	{% if type == 'submit' %}
+		{% set attr = attr|merge({
+			'data-loading-text': label|trans({}, translation_domain) ~ '...', 
+			onclick: 'var btn = $(this); btn.button("loading"); window.setTimeout(function(){ btn.button("reset"); }, 3000);',
+			autocomplete: 'off',
+		}) %}
+	{% endif %}
+	{{ parent() }}
+{% endblock %}
+
+{# ######################################################### #}

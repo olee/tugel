@@ -1,0 +1,1 @@
+./cmd.sh cache:clear --no-warmup --env=prod

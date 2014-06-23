@@ -1,0 +1,4 @@
+ssko_utility:
+    resource: "@sskoUtilityBundle/Controller/"
+    type:     annotation
+    prefix:   /

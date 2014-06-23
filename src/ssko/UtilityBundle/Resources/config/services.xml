@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+<!--
+    <parameters>
+        <parameter key="utilitybundle">ssko\UtilityBundle</parameter>
+    </parameters>
+-->
+    <services>
+	    <service id="ssko.twig.utility" class="ssko\UtilityBundle\Twig\Extension\TwigUtility">
+	        <tag name="twig.extension" />
+	    </service>
+	    <service id="ssko.twig.dump" class="ssko\UtilityBundle\Twig\Extension\TwigProdDump">
+	        <tag name="twig.extension" />
+	    </service>
+	    
+	    
+    </services>
+</container>

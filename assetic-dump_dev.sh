@@ -1,0 +1,1 @@
+./cmd.sh assetic:dump --env=dev
