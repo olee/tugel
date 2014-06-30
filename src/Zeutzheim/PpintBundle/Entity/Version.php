@@ -9,15 +9,24 @@ use JMS\Serializer\Annotation as JMS;
  * ZeutzheimPpintBundle:Version
  *
  * @ORM\Entity
- * @ORM\Table(name="version")
+ * @ORM\Table(name="version", uniqueConstraints={
+ *     @ORM\UniqueConstraint(name="version_idx", columns={"package_id", "name"})
+ * })
  */
 class Version {
+	/**
+	 * @var integer
+	 *
+	 * @ORM\Column(name="id", type="integer")
+	 * @ORM\Id
+	 * @ORM\GeneratedValue(strategy="AUTO")
+	 */
+	private $id;
 
 	/**
 	 * @var string
 	 *
-	 * @ORM\Id
-	 * @ORM\ManyToOne(targetEntity="Package", cascade={"all"})
+	 * @ORM\ManyToOne(targetEntity="Package", cascade={"all"}, fetch="EXTRA_LAZY")
 	 * @ORM\JoinColumn(name="package_id", nullable=false)
 	 */
 	private $package;
@@ -25,16 +34,38 @@ class Version {
 	/**
 	 * @var string
 	 *
-	 * @ORM\Id
-	 * @ORM\Column(name="name", type="string", length=30, nullable=false)
+	 * @ORM\Column(name="name", type="string", length=62, nullable=false)
 	 */
 	private $name;
 
 	/**
-	 * @var \DateTime
-	 * @ORM\Column(name="date", type="datetime")
+	 * @var boolean
+	 *
+	 * @ORM\Column(name="crawled", type="boolean", nullable=false)
 	 */
-	private $lastModifiedDate;
+	private $crawled;
+
+	/**
+	 * @var \DateTime
+	 * @ORM\Column(name="added_date", type="datetime")
+	 */
+	private $addedDate;
+
+	//*******************************************************************
+
+	public function __construct() {
+		$this->crawled = false;
+		$this->addedDate = new \DateTime();
+	}
+
+	/**
+	 * Get id
+	 *
+	 * @return integer
+	 */
+	public function getId() {
+		return $this->id;
+	}
 
 	//*******************************************************************
 
@@ -59,7 +90,7 @@ class Version {
 	}
 
 	//*******************************************************************
-	
+
 	/**
 	 * Set name
 	 *
@@ -83,23 +114,46 @@ class Version {
 	//*******************************************************************
 
 	/**
-	 * Set lastModifiedDate
+	 * Set crawled
 	 *
-	 * @param \DateTime $lastModifiedDate
+	 * @param boolean $crawled
 	 * @return Version
 	 */
-	public function setLastModifiedDate($lastModifiedDate) {
-		$this->lastModifiedDate = $lastModifiedDate;
+	public function setCrawled($crawled) {
+		$this->crawled = $crawled;
 		return $this;
 	}
 
 	/**
-	 * Get lastModifiedDate
+	 * Get crawled
+	 *
+	 * @return boolean
+	 */
+	public function getCrawled() {
+		return $this->crawled;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set addedDate
+	 *
+	 * @param \DateTime $addedDate
+	 * @return Version
+	 */
+	public function setAddedDate($addedDate) {
+		$this->addedDate = $addedDate;
+		return $this;
+	}
+
+	/**
+	 * Get addedDate
 	 *
 	 * @return \DateTime
 	 */
-	public function getLastModifiedDate() {
-		return $this->lastModifiedDate;
+	public function getAddedDate() {
+		return $this->addedDate;
 	}
 
+	//*******************************************************************
 }

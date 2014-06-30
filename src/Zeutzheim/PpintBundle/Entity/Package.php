@@ -9,7 +9,7 @@ use JMS\Serializer\Annotation as JMS;
  * ZeutzheimPpintBundle:Package
  *
  * @ORM\Entity
- * @ORM\Table(name="package")
+ * @ORM\Table(name="package", options={"collate"="utf8_bin"})
  */
 class Package {
 	/**
@@ -47,12 +47,37 @@ class Package {
 	/**
 	 * @var \Zeutzheim\PpintBundle\Entity\Platform
 	 *
-	 * @ORM\OneToMany(targetEntity="Version", mappedBy="package")
+	 * @ORM\OneToMany(targetEntity="Version", mappedBy="package", fetch="EXTRA_LAZY")
 	 * @JMS\Exclude
 	 */
 	private $versions;
 
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="mv_tag", type="string", length=127, nullable=true)
+	 */
+	private $masterVersionTag;
+
+	/**
+	 * @var boolean
+	 *
+	 * @ORM\Column(name="crawled", type="boolean", nullable=false)
+	 */
+	private $crawled;
+
+	/**
+	 * @var \DateTime
+	 * @ORM\Column(name="added_date", type="datetime")
+	 */
+	private $addedDate;
+
 	//*******************************************************************
+
+	public function __construct() {
+		$this->crawled = false;
+		$this->addedDate = new \DateTime();
+	}
 
 	/**
 	 * Get id
@@ -130,5 +155,101 @@ class Package {
 	}
 
 	//*******************************************************************
-	
+
+	/**
+	 * Set crawled
+	 *
+	 * @param boolean $crawled
+	 * @return Version
+	 */
+	public function setCrawled($crawled) {
+		$this->crawled = $crawled;
+		return $this;
+	}
+
+	/**
+	 * Get crawled
+	 *
+	 * @return boolean
+	 */
+	public function getCrawled() {
+		return $this->crawled;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set addedDate
+	 *
+	 * @param \DateTime $addedDate
+	 * @return Version
+	 */
+	public function setAddedDate($addedDate) {
+		$this->addedDate = $addedDate;
+		return $this;
+	}
+
+	/**
+	 * Get addedDate
+	 *
+	 * @return \DateTime
+	 */
+	public function getAddedDate() {
+		return $this->addedDate;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Add versions
+	 *
+	 * @param \Zeutzheim\PpintBundle\Entity\Version $versions
+	 * @return Package
+	 */
+	public function addVersion(\Zeutzheim\PpintBundle\Entity\Version $versions) {
+		$this->versions[] = $versions;
+		return $this;
+	}
+
+	/**
+	 * Remove versions
+	 *
+	 * @param \Zeutzheim\PpintBundle\Entity\Version $versions
+	 */
+	public function removeVersion(\Zeutzheim\PpintBundle\Entity\Version $versions) {
+		$this->versions->removeElement($versions);
+	}
+
+	/**
+	 * Get versions
+	 *
+	 * @return \Doctrine\Common\Collections\Collection
+	 */
+	public function getVersions() {
+		return $this->versions;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set masterVersionTag
+	 *
+	 * @param string $masterVersionTag
+	 * @return Package
+	 */
+	public function setMasterVersionTag($masterVersionTag) {
+		$this->masterVersionTag = $masterVersionTag;
+		return $this;
+	}
+
+	/**
+	 * Get masterVersionTag
+	 *
+	 * @return string
+	 */
+	public function getMasterVersionTag() {
+		return $this->masterVersionTag;
+	}
+
+	//*******************************************************************
 }

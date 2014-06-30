@@ -24,6 +24,20 @@ framework:
     fragments:       ~
     http_method_override: true
 
+monolog:
+    channels: ["ppint"]
+    handlers:
+        ppint:
+            type:     stream
+            path:     "%kernel.logs_dir%/ppint.log"
+            channels: ["ppint"]
+            formatter: monolog.formatter.simple_line
+#        ppint_last:
+#            type:     stream
+#            path:     "%kernel.logs_dir%/ppint.last.log"
+#            channels: ["ppint"]
+#            formatter: monolog.formatter.simple_line
+    
 # Twig Configuration
 twig:
     debug:            "%kernel.debug%"
