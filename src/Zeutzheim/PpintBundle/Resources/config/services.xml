@@ -5,7 +5,11 @@
 	xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
 	<parameters>
+		<parameter key="ppint.crawler_manager.class">Zeutzheim\PpintBundle\Model\CrawlerManager</parameter>
 		<parameter key="ppint.crawler.class">Zeutzheim\PpintBundle\Model\Crawler</parameter>
+		
+		<parameter key="ppint.crawler.packagist.class">Zeutzheim\PpintBundle\Model\Crawler\PackagistCrawler</parameter>
+		<parameter key="ppint.crawler.hackage.class">Zeutzheim\PpintBundle\Model\Crawler\HackageCrawler</parameter>
 	</parameters>
 
 	<services>
@@ -13,11 +17,24 @@
 		<service id="monolog.formatter.simple_line" class="Monolog\Formatter\LineFormatter">
 			<argument>[%%datetime%%] %%level_name%%: %%message%%&#xA;</argument>
 		</service>
+		
+		<service id="ppint.crawler_manager" class="%ppint.crawler_manager.class%">
+			<argument type="service" id="service_container" />
+			<argument type="service" id="monolog.logger.ppint" />
+		</service>
 
 		<service id="ppint.crawler" class="%ppint.crawler.class%">
 			<argument type="service" id="service_container" />
 			<argument type="service" id="doctrine.orm.entity_manager" />
 			<argument type="service" id="monolog.logger.ppint" />
+		</service>
+
+
+		<service id="ppint.crawler.packagist" class="%ppint.crawler.packagist.class%" parent="ppint.crawler">
+			<tag name="ppint.crawler" />			
+		</service>
+		<service id="ppint.crawler.hackage" class="%ppint.crawler.hackage.class%" parent="ppint.crawler">
+			<tag name="ppint.crawler" />			
 		</service>
 
 	</services>

@@ -21,15 +21,9 @@ class CrawlCommand extends ContainerAwareCommand {
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-		$crawler = $this->getContainer()->get('ppint.crawler');
-		$crawler->crawlPlatforms();
-		$crawler->crawlPackages();
-	}
-
-	/**
-	 * @see Command
-	 */
-	protected function interact(InputInterface $input, OutputInterface $output) {
+		$cm = $this->getContainer()->get('ppint.crawler_manager');
+		$cm->crawlPlatforms();
+		$cm->crawlPackages();
 	}
 
 }

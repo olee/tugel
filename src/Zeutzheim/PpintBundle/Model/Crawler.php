@@ -11,10 +11,13 @@ use Zeutzheim\PpintBundle\Entity\Platform;
 use Zeutzheim\PpintBundle\Entity\Package;
 use Zeutzheim\PpintBundle\Entity\Version;
 
-class Crawler extends ContainerAwareHelperNT {
+abstract class Crawler extends ContainerAwareHelperNT {
+	
+	protected $platform;
+	protected $platformRef;
 
-	private $packageQb;
-	private $versionQb;
+	protected $packageQb;
+	protected $versionQb;
 
 	/**
 	 * @var Logger
@@ -29,131 +32,33 @@ class Crawler extends ContainerAwareHelperNT {
 	}
 
 	//*******************************************************************
+	
+	public function crawlPlatform() {
+		$this->log('---- started crawling platform ' . $this->getPlatformName() . ' ----');
 
-	public function getDemoPlatform() {
-		$platform = $this->getPlatform('packagist');
-		if (!$platform) {
-			// Create demo platform
-			$platform = new Platform();
-			$platform->setName('packagist');
-			$platform->setBaseUrl('https://packagist.org/packages/');
-			$platform->setCrawlUrl('https://packagist.org/feeds/releases.rss');
-			$platform->setPackageRegex('@<link>https://packagist.org/packages/([^<]*)</link>@i');
-			$platform->setVersionRegex('@<li (?=[^>]*class="version[^>]*).*id="([^"]*)"@i');
-			$platform->setMasterVersion('dev-master');
-			$this->getEntityManager()->persist($platform);
+		$src = $this->httpGet($this->getCrawlUrl());
 
-			$lang = $this->getLanguage('php');
-			if (!$lang) {
-				$lang = new Language();
-				$lang->setName('php');
-				$lang->setExtension('.php');
-				$this->getEntityManager()->persist($lang);
-			}
-			$platform->addLanguage($lang);
-			$this->getEntityManager()->flush();
-		}
-
-		$platform = $this->getPlatform('hackage');
-		if (!$platform) {
-			// Create demo platform
-			$platform = new Platform();
-			$platform->setName('hackage');
-			$platform->setBaseUrl('https://hackage.haskell.org/package/');
-			$platform->setCrawlUrl('https://hackage.haskell.org/packages/recent.rss');
-			$platform->setPackageRegex('@<link>http://hackage.haskell.org/package/([^<]*)-[\d\.]*</link>@i');
-			$platform->setVersionRegex('@/package/[^"]*-([\d\.]*)"@i');
-			$this->getEntityManager()->persist($platform);
-
-			$lang = $this->getLanguage('haskell');
-			if (!$lang) {
-				$lang = new Language();
-				$lang->setName('haskell');
-				$lang->setExtension('.hs');
-				$this->getEntityManager()->persist($lang);
-			}
-			$platform->addLanguage($lang);
-			$this->getEntityManager()->flush();
-		}
-		//$platform->setCrawlUrl('https://hackage.haskell.org/packages/');
-		//$platform->setPackageRegex('@/package/([^"]*)-?[\d\.]*"@i');
-
-		$platform->setCrawlUrl('https://hackage.haskell.org/packages/recent.rss');
-		$platform->setPackageRegex('@<link>http://hackage.haskell.org/package/([^<]*)-[\d\.]*</link>@i');
-
-		return $platform;
-	}
-
-	//*******************************************************************
-
-	public function crawlPlatforms($count = 0) {
-		$this->log('---- started crawling platforms ----');
-		set_time_limit(60 * 60);
-		$platform = $this->getDemoPlatform();
-		foreach ($this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Platform')->findAll() as $platform) {
-			$this->crawlPlatform($platform);
-			if ($count == 1)
-				break;
-			$count--;
-		}
-		$this->log('---- finished crawling platforms ----');
-	}
-
-	public function crawlPlatform(Platform $platform) {
-		$this->log('---- started crawling platform ' . $platform->getName() . ' ----');
-		$platform = $this->getEntityManager()->merge($platform);
-
-		$src = $this->httpGet($platform->getCrawlUrl());
-
-		preg_match_all($platform->getPackageRegex(), $src, $matches);
+		preg_match_all($this->getPackageRegex(), $src, $matches);
 		$packages = array_unique($matches[1]);
 
 		foreach ($packages as $packageUri) {
-			$package = $this->getPackage($platform, $packageUri);
+			$package = $this->getPackage($packageUri);
 			if (!$package) {
 				$package = new Package();
 				$package->setName($packageUri);
 				$package->setUrl($packageUri);
-				$package->setPlatform($platform);
+				$package->setPlatform($this->getPlatformReference());
 				$this->getEntityManager()->persist($package);
 
-				$this->log('A ' . $package->getPlatform()->getName() . ' ' . $package->getName());
+				$this->log('A ' . $this->getPlatformName() . ' ' . $package->getName());
 			} else {
 				$package->setCrawled(false);
-				$this->log('U ' . $package->getPlatform()->getName() . ' ' . $package->getName());
+				$this->log('U ' . $this->getPlatformName() . ' ' . $package->getName());
 			}
 		}
 		$this->getEntityManager()->flush();
-		$this->log('---- finished crawling platform ' . $platform->getName() . ' ----');
-	}
-
-	//*******************************************************************
-
-	public function crawlPackages(Platform $platform = null, $maxCount = 0) {
-		$this->log('---- started crawling packages' . ($platform ? ' of platform ' . $package->getPlatform()->getName() : '') . ' ----');
-		
-		// Load package list
-		$packages = $this->selectCrawlPackages($platform);
-		
-		// Calculate maximum number of iterations
-		if ($maxCount == 0)
-			$maxCount = count($packages);
-		else
-			$maxCount = min(count($packages), $maxCount);
-		set_time_limit(60 * 5 + $maxCount);
-		
-		// Remove Package-entities from UnitOfWork which may be left from previous 
-		// operations to speed up flushing process
 		$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
-		
-		// Crawl packages
-		for ($i = 0; $i < $maxCount; $i++) {
-			$this->logProgress = $i . '/' . $maxCount . ' ' . round($i * 100 / $maxCount) . '% ';
-			$this->crawlPackage($this->getEntityManager()->getReference('ZeutzheimPpintBundle:Package', $packages[$i]), false);
-		}
-		
-		$this->logProgress = null;
-		$this->log('---- finished crawling packages' . ($platform ? ' of platform ' . $package->getPlatform()->getName() : '') . ' ----');
+		$this->log('---- finished crawling platform ' . $this->getPlatformName() . ' ----');
 	}
 
 	public function crawlPackage(Package $package = null) {
@@ -169,12 +74,12 @@ class Crawler extends ContainerAwareHelperNT {
 			$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
 		
 		// Load source
-		$src = $this->httpGet($package->getPlatform()->getBaseUrl() . $package->getName());
+		$src = $this->httpGet($this->getBaseUrl() . $package->getName());
 		if ($src == null)
 			return false;
 		
 		// Find versions from source
-		preg_match_all($package->getPlatform()->getVersionRegex(), $src, $matches);
+		preg_match_all($this->getVersionRegex(), $src, $matches);
 		// Make version list unique
 		$versions = array_unique($matches[1]);
 
@@ -188,20 +93,20 @@ class Crawler extends ContainerAwareHelperNT {
 				$version->setPackage($package);
 				$this->getEntityManager()->persist($version);
 	
-				$this->log('AV ' . $package->getPlatform()->getName() . ' ' . $package->getName() . ' ' . $version->getName());
+				$this->log('AV ' . $this->getPlatformName() . ' ' . $package->getName() . ' ' . $version->getName());
 				//sleep(1);
 			}
 			
 			// Check if a master-version was found
-			if ($version->getName() == $package->getPlatform()->getMasterVersion() && $package->getPlatform()->getMasterVersionTagRegex()) {
+			if ($version->getName() == $this->getPlatform()->getMasterVersion() && $this->getMasterVersionTagRegex()) {
 				// Fetch the master-version identifiert (hash, date, etc.)
-				if (preg_match($package->getPlatform()->getMasterVersionTagRegex(), $src, $matches)) {
+				if (preg_match($this->getMasterVersionTagRegex(), $src, $matches)) {
 					// Check if the master-version is still up to date
 					if ($package->getMasterVersionTag() != $matches[1]) {
 						$package->setMasterVersionTag($matches[1]);
 						if (!$newVersion) {
 							$version->setCrawled(false);
-							$this->log('UV ' . $package->getPlatform()->getName() . ' ' . $package->getName() . ' ' . $version->getName());
+							$this->log('UV ' . $this->getPlatformName() . ' ' . $package->getName() . ' ' . $version->getName());
 						}
 					}
 				}
@@ -215,37 +120,65 @@ class Crawler extends ContainerAwareHelperNT {
 		return true;
 	}
 
-	public function log($msg) {
-		if ($this->logProgress)
-			$msg = $this->logProgress . $msg;
-		$this->logger->info($msg);
-	}
+	//*******************************************************************
+	
+	public abstract function downloadVersion(Version $version, $path);
+
+	public abstract function setupPlatform(Platform $platform);
+	
+	//*******************************************************************
+	
+	public abstract function getPlatformName();
+	
+	public abstract function getBaseUrl();
+	
+	public abstract function getCrawlUrl();
+	
+	public abstract function getPackageRegex();
+	
+	public abstract function getVersionRegex();
+	
+	public abstract function getMasterVersion();
+	
+	public abstract function getMasterVersionTagRegex();
 
 	//*******************************************************************
-
-	/**
-	 * @return Package
-	 */
-	public function selectCrawlPackage(Platform $platform = null) {
-		$qb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package')->createQueryBuilder('pkg');
-		$qb->where('pkg.crawled = FALSE')->orderBy('pkg.addedDate')->setMaxResults(1);
-		if ($platform)
-			$qb->andWhere('pkg.platform = ' . $platform->getId());
-		return $qb->getQuery()->getOneOrNullResult();
-	}
-
+	
 	/**
 	 * @return array (integer)
 	 */
-	public function selectCrawlPackages(Platform $platform = null) {
+	public function selectCrawlPackages() {
 		$qb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package')->createQueryBuilder('pkg');
-		$qb->select('pkg.id')->where('pkg.crawled = FALSE')->orderBy('pkg.addedDate');
-		if ($platform)
-			$qb->andWhere('pkg.platform = ' . $platform->getId());
+		$qb->select('pkg.id')->where('pkg.crawled = FALSE')->andWhere('pkg.platform = ' . $this->getPlatform()->getId())->orderBy('pkg.addedDate');
 		return $qb->getQuery()->getResult();
 	}
 
-	//*******************************************************************
+	/**
+	 * @return Platform
+	 */
+	public function getPlatform() {
+		if (!$this->platform) {
+			$this->platform = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Platform')->findOneByName($this->getPlatformName());
+			if (!$this->platform) {
+				$this->platform = new Platform();
+				$this->platform->setName($this->getPlatformName());
+				$this->setupPlatform($this->platform);
+				$this->getEntityManager()->persist($this->platform);
+				$this->getEntityManager()->flush();
+			}
+		}
+		return $this->platform;
+	}
+		
+	/**
+	 * @return Platform
+	 */
+	public function getPlatformReference() {
+		if (!$this->platformRef) {
+			$this->platformRef = $this->getEntityManager()->getReference('ZeutzheimPpintBundle:Platform', $this->getPlatform()->getId());
+		}
+		return $this->platformRef;
+	}
 	
 	public function getManagedEntityCount() {
 		$count = 0;
@@ -253,22 +186,18 @@ class Crawler extends ContainerAwareHelperNT {
 		return $count;
 	}
 	
-	public function getPlatform($name) {
-		return $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Platform')->findOneByName($name);
-	}
-
-	public function getLanguage($name, $ext = null) {
+	public function getLanguage($name) {
 		return $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Language')->findOneByName($name);
 	}
 
-	public function getPackage(Platform $platform, $url) {
+	public function getPackage($url) {
 		if (!$this->packageQb) {
 			$this->packageQb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package')->createQueryBuilder('e');
 			$this->packageQb->where('e.platform = ?1');
 			$this->packageQb->andWhere('e.url = ?2');
 		}
 		return $this->packageQb->setParameters(array(
-			1 => $platform->getId(),
+			1 => $this->getPlatform()->getId(),
 			2 => $url
 		))->getQuery()->getOneOrNullResult();
 	}
@@ -285,7 +214,12 @@ class Crawler extends ContainerAwareHelperNT {
 		))->getQuery()->getOneOrNullResult();
 	}
 
-	private function httpGet($url) {
+	public function getLatestVersion(Package $package) {
+		$qb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Version')->createQueryBuilder('v');
+		return $qb->where('v.package = ' . $package->getId())->orderBy('v.addedDate')->setMaxResults(1)->getQuery()->getOneOrNullResult();
+	}
+
+	public function httpGet($url) {
 		/*
 		 $ch = curl_init();
 		 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -306,4 +240,11 @@ class Crawler extends ContainerAwareHelperNT {
 		//*/
 	}
 
+	public function log($msg) {
+		if ($this->logProgress)
+			$msg = $this->logProgress . $msg;
+		$this->logger->info($msg);
+	}
+
+	//*******************************************************************
 }

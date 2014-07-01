@@ -26,10 +26,4 @@ class CrawlPackagesCommand extends ContainerAwareCommand {
 		$crawler->crawlPackages();
 	}
 
-	/**
-	 * @see Command
-	 */
-	protected function interact(InputInterface $input, OutputInterface $output) {
-	}
-
 }
