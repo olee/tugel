@@ -5,25 +5,28 @@ namespace Zeutzheim\PpintBundle\Command;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
-class CrawlPackagesCommand extends ContainerAwareCommand {
+class FindCommand extends ContainerAwareCommand {
 	/**
 	 * @see Command
 	 */
 	protected function configure() {
 		parent::configure();
 
-		$this->setName('ppint:crawl:packages');
-		//$this->setDescription('Generates sample data');
+		$this->setName('ppint:find');
+		$this->setDefinition(array(
+			new InputArgument('filename', InputArgument::REQUIRED),
+		));
 	}
 
 	/**
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-		$crawler = $this->getContainer()->get('ppint.crawler');
-		//$crawler->crawlPlatforms();
-		$crawler->crawlPackages();
+		$ppint = $this->getContainer()->get('ppint.manager');
+		$ppint->findPackagesBySource($input->getArgument('filename'));
 	}
 
 }

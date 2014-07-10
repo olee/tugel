@@ -24,6 +24,57 @@ framework:
     fragments:       ~
     http_method_override: true
 
+fos_elastica:
+    clients:
+        default: { host: localhost, port: 9200 }
+    indexes:
+        search:
+            index_name: ppint
+            settings:
+                index:
+                    analysis:
+                        analyzer:
+#                            default_index:
+#                                type: whitespace
+#                            default_search:
+#                                type: whitespace
+                            whitespace:
+                                type: whitespace
+                            identifier:
+                                type: pattern
+                                pattern: "[\\:\\.\\W\\\\]+"
+                                lowercase: false
+            types:
+#                package:
+#                    mappings:
+#                        name: ~
+#                        description: ~
+#                        url: ~
+#                    persistence:
+#                        driver: orm
+#                        model: Zeutzheim\PpintBundle\Entity\Package
+#                        provider: ~
+#                        listener: ~
+                version:
+                    indexable_callback: isIndexed
+                    mappings:
+                        name: ~
+                        package:
+                            type: "object"
+                            properties:
+                                id: ~ #{ boost: 5 }
+                                name: ~ #{ boost: 5 }
+                                description: ~ #{ boost: 5 }
+                        namespaces: { analyzer: identifier }
+                        classes: { boost: 1, analyzer: identifier }
+                        languages: { analyzer: whitespace }
+                    persistence:
+                        driver: orm
+                        model: Zeutzheim\PpintBundle\Entity\Version
+                        provider: ~
+                        listener: ~
+                        finder: ~
+
 monolog:
     channels: ["ppint"]
     handlers:

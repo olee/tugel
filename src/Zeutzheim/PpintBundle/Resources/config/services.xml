@@ -1,41 +1,78 @@
 <?xml version="1.0" ?>
 
 <container xmlns="http://symfony.com/schema/dic/services"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
 	<parameters>
-		<parameter key="ppint.crawler_manager.class">Zeutzheim\PpintBundle\Model\CrawlerManager</parameter>
-		<parameter key="ppint.crawler.class">Zeutzheim\PpintBundle\Model\Crawler</parameter>
-		
-		<parameter key="ppint.crawler.packagist.class">Zeutzheim\PpintBundle\Model\Crawler\PackagistCrawler</parameter>
-		<parameter key="ppint.crawler.hackage.class">Zeutzheim\PpintBundle\Model\Crawler\HackageCrawler</parameter>
-	</parameters>
+		<parameter key="ppint.manager.class">Zeutzheim\PpintBundle\Model\PackagePlatformIntegrationManager</parameter>
 
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<parameter key="ppint.platform_manager.class">Zeutzheim\PpintBundle\Model\PlatformManager</parameter>
+		<parameter key="ppint.platform.class">Zeutzheim\PpintBundle\Model\Platform</parameter>
+		<parameter key="ppint.platform.packagist.class">Zeutzheim\PpintBundle\Model\Platform\Packagist</parameter>
+		<parameter key="ppint.platform.hackage.class">Zeutzheim\PpintBundle\Model\Platform\Hackage</parameter>
+
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<parameter key="ppint.language_manager.class">Zeutzheim\PpintBundle\Model\LanguageManager</parameter>
+		<parameter key="ppint.language.class">Zeutzheim\PpintBundle\Model\Language</parameter>
+		<parameter key="ppint.language.php.class">Zeutzheim\PpintBundle\Model\Language\PHP</parameter>
+		<parameter key="ppint.language.java.class">Zeutzheim\PpintBundle\Model\Language\Java</parameter>
+		<parameter key="ppint.language.haskell.class">Zeutzheim\PpintBundle\Model\Language\Haskell</parameter>
+	</parameters>
 	<services>
 		
+	    <service id="monolog.logger.ppint" parent="monolog.logger_prototype">
+	        <argument index="0">ppint</argument>
+	    </service>
+	    <service id="ppint.logger" alias="monolog.logger.ppint" />
+
 		<service id="monolog.formatter.simple_line" class="Monolog\Formatter\LineFormatter">
 			<argument>[%%datetime%%] %%level_name%%: %%message%%&#xA;</argument>
 		</service>
-		
-		<service id="ppint.crawler_manager" class="%ppint.crawler_manager.class%">
-			<argument type="service" id="service_container" />
-			<argument type="service" id="monolog.logger.ppint" />
-		</service>
 
-		<service id="ppint.crawler" class="%ppint.crawler.class%">
-			<argument type="service" id="service_container" />
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<service id="ppint.manager" class="%ppint.manager.class%">
 			<argument type="service" id="doctrine.orm.entity_manager" />
-			<argument type="service" id="monolog.logger.ppint" />
+			<argument type="service" id="ppint.logger" />
+			<argument type="service" id="ppint.platform_manager" />
+			<argument type="service" id="ppint.language_manager" />
+			<argument type="service" id="fos_elastica.finder.search.version" />
 		</service>
 
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<service id="ppint.platform_manager" class="%ppint.platform_manager.class%" />
+		<service id="ppint.platform" class="%ppint.platform.class%">
+			<argument type="service" id="doctrine.orm.entity_manager" />
+			<argument type="service" id="ppint.logger" />
+			<argument type="service" id="ppint.language_manager" />
+		</service>
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<!-- Platform managers -->
+		<service id="ppint.platform.packagist" class="%ppint.platform.packagist.class%" parent="ppint.platform">
+			<tag name="ppint.platform" />
+		</service>
+		<service id="ppint.platform.hackage" class="%ppint.platform.hackage.class%" parent="ppint.platform">
+			<tag name="ppint.platform" />
+		</service>
 
-		<service id="ppint.crawler.packagist" class="%ppint.crawler.packagist.class%" parent="ppint.crawler">
-			<tag name="ppint.crawler" />			
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<service id="ppint.language_manager" class="%ppint.language_manager.class%" />
+		<service id="ppint.language" class="%ppint.language.class%">
+			<argument type="service" id="ppint.logger" />
 		</service>
-		<service id="ppint.crawler.hackage" class="%ppint.crawler.hackage.class%" parent="ppint.crawler">
-			<tag name="ppint.crawler" />			
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<!-- Language managers -->
+		<service id="ppint.language.php" class="%ppint.language.php.class%" parent="ppint.language">
+			<tag name="ppint.language" />
 		</service>
+		<service id="ppint.language.java" class="%ppint.language.java.class%" parent="ppint.language">
+			<tag name="ppint.language" />
+		</service>
+		<service id="ppint.language.haskell" class="%ppint.language.haskell.class%" parent="ppint.language">
+			<tag name="ppint.language" />
+		</service>
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
 
 	</services>
 

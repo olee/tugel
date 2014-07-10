@@ -28,11 +28,11 @@ class DownloadCommand extends ContainerAwareCommand {
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-		$cm = $this->getContainer()->get('ppint.crawler_manager');
-		if ($cm->downloadPackage($input->getArgument('platform'), $input->getArgument('package'), $input->getArgument('version'), $input->getArgument('path'))) {
-			$this->getContainer()->get('monolog.logger.ppint')->info("Successfully downloaded package.");
+		$ppint = $this->getContainer()->get('ppint.manager');
+		if ($ppint->downloadPackage($input->getArgument('platform'), $input->getArgument('package'), $input->getArgument('version'), $input->getArgument('path'))) {
+			$this->getContainer()->get('ppint.logger')->info("Successfully downloaded package.");
 		} else {
-			$this->getContainer()->get('monolog.logger.ppint')->info("Error while downloaded package!");
+			$this->getContainer()->get('ppint.logger')->info("Error while downloaded package!");
 		}
 	}
 

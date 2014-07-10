@@ -34,16 +34,44 @@ class Version {
 	/**
 	 * @var string
 	 *
-	 * @ORM\Column(name="name", type="string", length=62, nullable=false)
+	 * @ORM\Column(name="name", type="string", length=127, nullable=false)
 	 */
 	private $name;
 
 	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="namespaces", type="string", length=131072, nullable=true)
+	 */
+	private $namespaces;
+
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="classes", type="string", length=131072, nullable=true)
+	 */
+	private $classes;
+
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="languages", type="string", length=1024, nullable=true)
+	 */
+	private $languages;
+
+	/**
 	 * @var boolean
 	 *
-	 * @ORM\Column(name="crawled", type="boolean", nullable=false)
+	 * @ORM\Column(name="indexed", type="boolean", nullable=false)
 	 */
-	private $crawled;
+	private $indexed;
+
+	/**
+	 * @var boolean
+	 *
+	 * @ORM\Column(name="error", type="boolean", nullable=false)
+	 */
+	private $error;
 
 	/**
 	 * @var \DateTime
@@ -54,8 +82,13 @@ class Version {
 	//*******************************************************************
 
 	public function __construct() {
-		$this->crawled = false;
+		$this->indexed = false;
+		$this->error = false;
 		$this->addedDate = new \DateTime();
+	}
+
+	public function __toString() {
+		return $this->name;
 	}
 
 	/**
@@ -114,23 +147,111 @@ class Version {
 	//*******************************************************************
 
 	/**
-	 * Set crawled
+	 * Set namespaces
 	 *
-	 * @param boolean $crawled
+	 * @param string $namespaces
 	 * @return Version
 	 */
-	public function setCrawled($crawled) {
-		$this->crawled = $crawled;
+	public function setNamespaces($namespaces) {
+		$this->namespaces = $namespaces;
 		return $this;
 	}
 
 	/**
-	 * Get crawled
+	 * Get namespaces
+	 *
+	 * @return string
+	 */
+	public function getNamespaces() {
+		return $this->namespaces;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set classes
+	 *
+	 * @param string $classes
+	 * @return Version
+	 */
+	public function setClasses($classes) {
+		$this->classes = $classes;
+		return $this;
+	}
+
+	/**
+	 * Get classes
+	 *
+	 * @return string
+	 */
+	public function getClasses() {
+		return $this->classes;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set languages
+	 *
+	 * @param string $languages
+	 * @return Version
+	 */
+	public function setLanguages($languages) {
+		$this->languages = $languages;
+		return $this;
+	}
+
+	/**
+	 * Get languages
+	 *
+	 * @return string
+	 */
+	public function getLanguages() {
+		return $this->languages;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set indexed
+	 *
+	 * @param boolean $indexed
+	 * @return Version
+	 */
+	public function setIndexed($indexed) {
+		$this->indexed = $indexed;
+		return $this;
+	}
+
+	/**
+	 * Get indexed
 	 *
 	 * @return boolean
 	 */
-	public function getCrawled() {
-		return $this->crawled;
+	public function isIndexed() {
+		return $this->indexed;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set error
+	 *
+	 * @param boolean $error
+	 * @return Version
+	 */
+	public function setError($error) {
+		$this->error = $error;
+		return $this;
+	}
+
+	/**
+	 * Get error
+	 *
+	 * @return boolean
+	 */
+	public function isError() {
+		return $this->error;
 	}
 
 	//*******************************************************************
@@ -156,4 +277,5 @@ class Version {
 	}
 
 	//*******************************************************************
+
 }

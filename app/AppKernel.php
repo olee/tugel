@@ -21,6 +21,7 @@ class AppKernel extends Kernel
 			/* REST API Bundles */
 	        //new FOS\RestBundle\FOSRestBundle(),
         	//new FOS\OAuthServerBundle\FOSOAuthServerBundle(),
+        	new FOS\ElasticaBundle\FOSElasticaBundle(),
 	        new JMS\SerializerBundle\JMSSerializerBundle(),
 			/* ssko */
             new ssko\UtilityBundle\sskoUtilityBundle(),

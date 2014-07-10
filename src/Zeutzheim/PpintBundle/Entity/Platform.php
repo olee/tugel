@@ -73,17 +73,9 @@ class Platform {
 	/**
 	 * @var \Doctrine\Common\Collections\Collection
 	 *
-	 * @ORM\OneToMany(targetEntity="Package", mappedBy="platform", fetch="EXTRA_LAZY")
+	 * @ORM\OneToMany(targetEntity="Package", mappedBy="platform", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
 	 */
 	private $packages;
-
-	/**
-	 * @var \Doctrine\Common\Collections\Collection
-	 *
-	 * @ORM\ManyToMany(targetEntity="Language", inversedBy="platforms")
-	 * @ORM\JoinTable(name="platform_language")
-	 */
-	private $languages;
 
 	//*******************************************************************
 
@@ -95,6 +87,10 @@ class Platform {
 		$this->languages = new \Doctrine\Common\Collections\ArrayCollection();
 	}
 
+	public function __toString() {
+		return $this->name;
+	}
+	
 	/**
 	 * Get id
 	 *
@@ -213,6 +209,7 @@ class Platform {
 	public function getVersionRegex() {
 		return $this->versionRegex;
 	}
+
 	//*******************************************************************
 
 	/**
@@ -287,37 +284,6 @@ class Platform {
 	 */
 	public function getPackages() {
 		return $this->packages;
-	}
-
-	//*******************************************************************
-
-	/**
-	 * Add languages
-	 *
-	 * @param \Zeutzheim\PpintBundle\Entity\Language $languages
-	 * @return Platform
-	 */
-	public function addLanguage(\Zeutzheim\PpintBundle\Entity\Language $languages) {
-		$this->languages[] = $languages;
-		return $this;
-	}
-
-	/**
-	 * Remove languages
-	 *
-	 * @param \Zeutzheim\PpintBundle\Entity\Language $languages
-	 */
-	public function removeLanguage(\Zeutzheim\PpintBundle\Entity\Language $languages) {
-		$this->languages->removeElement($languages);
-	}
-
-	/**
-	 * Get languages
-	 *
-	 * @return \Doctrine\Common\Collections\Collection
-	 */
-	public function getLanguages() {
-		return $this->languages;
 	}
 
 	//*******************************************************************

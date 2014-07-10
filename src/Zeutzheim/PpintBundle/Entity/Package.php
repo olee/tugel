@@ -31,6 +31,13 @@ class Package {
 	/**
 	 * @var string
 	 *
+	 * @ORM\Column(name="description", type="string", length=1024, nullable=true)
+	 */
+	private $description;
+
+	/**
+	 * @var string
+	 *
 	 * @ORM\Column(name="url", type="string", length=255, nullable=false)
 	 */
 	private $url;
@@ -47,7 +54,7 @@ class Package {
 	/**
 	 * @var \Zeutzheim\PpintBundle\Entity\Platform
 	 *
-	 * @ORM\OneToMany(targetEntity="Version", mappedBy="package", fetch="EXTRA_LAZY")
+	 * @ORM\OneToMany(targetEntity="Version", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
 	 * @JMS\Exclude
 	 */
 	private $versions;
@@ -67,6 +74,20 @@ class Package {
 	private $crawled;
 
 	/**
+	 * @var boolean
+	 *
+	 * @ORM\Column(name="indexed", type="boolean", nullable=false)
+	 */
+	private $indexed;
+
+	/**
+	 * @var boolean
+	 *
+	 * @ORM\Column(name="error", type="boolean", nullable=false)
+	 */
+	private $error;
+
+	/**
 	 * @var \DateTime
 	 * @ORM\Column(name="added_date", type="datetime")
 	 */
@@ -76,9 +97,15 @@ class Package {
 
 	public function __construct() {
 		$this->crawled = false;
+		$this->indexed = false;
+		$this->error = false;
 		$this->addedDate = new \DateTime();
 	}
 
+	public function __toString() {
+		return $this->name;
+	}
+	
 	/**
 	 * Get id
 	 *
@@ -108,6 +135,26 @@ class Package {
 	 */
 	public function getName() {
 		return $this->name;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set description
+	 * @param string $description
+	 * @return Format
+	 */
+	public function setDescription($description) {
+		$this->description = $description;
+		return $this;
+	}
+
+	/**
+	 * Get description
+	 * @return string
+	 */
+	public function getDescription() {
+		return $this->description;
 	}
 
 	//*******************************************************************
@@ -172,8 +219,52 @@ class Package {
 	 *
 	 * @return boolean
 	 */
-	public function getCrawled() {
+	public function isCrawled() {
 		return $this->crawled;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set indexed
+	 *
+	 * @param boolean $indexed
+	 * @return Version
+	 */
+	public function setIndexed($indexed) {
+		$this->indexed = $indexed;
+		return $this;
+	}
+
+	/**
+	 * Get indexed
+	 *
+	 * @return boolean
+	 */
+	public function isIndexed() {
+		return $this->indexed;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set error
+	 *
+	 * @param boolean $error
+	 * @return Version
+	 */
+	public function setError($error) {
+		$this->error = $error;
+		return $this;
+	}
+
+	/**
+	 * Get error
+	 *
+	 * @return boolean
+	 */
+	public function isError() {
+		return $this->error;
 	}
 
 	//*******************************************************************

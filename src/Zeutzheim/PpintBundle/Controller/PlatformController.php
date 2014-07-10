@@ -11,18 +11,18 @@ use Doctrine\ORM\EntityManager;
 
 use ssko\UtilityBundle\Core\ControllerHelperNT;
 
-use Zeutzheim\PpintBundle\Model\Crawler;
+use Zeutzheim\PpintBundle\Model\Platform;
 
 /**
  * @Route("/")
  */
-class CrawlerController extends ControllerHelperNT {
+class PlatformController extends ControllerHelperNT {
 
 	/**
-	 * @return Zeutzheim\PpintBundle\Model\Crawler
+	 * @return Zeutzheim\PpintBundle\Model\Platform
 	 */
-	public function getCrawler() {
-		return $this->get('ppint.crawler');
+	public function getPlatform() {
+		return $this->get('ppint.platform');
 	}
 
 	/**
@@ -41,11 +41,11 @@ class CrawlerController extends ControllerHelperNT {
 	 * @Route("/crawl/packagist")
 	 */
 	public function crawlPackagist() {
-		$platform = $this->getCrawler()->getPlatform('packagist');
+		$platform = $this->getPlatform()->getPlatform('packagist');
 		if (!$platform)
 			throw new \RuntimeException();
 
-		$this->getCrawler()->logger->info('-- started crawling packagist --');
+		$this->getPlatform()->logger->info('-- started crawling packagist --');
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -57,7 +57,7 @@ class CrawlerController extends ControllerHelperNT {
 		$letter = 'j';
 		while ($letter != 'z') {
 			for ($page = 1; $page <= 200; $page++) {
-				$this->getCrawler()->logger->info('LETTER ' . $letter . ' PAGE ' . $page);
+				$this->getPlatform()->logger->info('LETTER ' . $letter . ' PAGE ' . $page);
 	
 				curl_setopt($ch, CURLOPT_URL, 'https://packagist.org/search/?search_query%5Bquery%5D=' . $letter . '&page=' . $page);
 				$src = curl_exec($ch);
@@ -68,7 +68,7 @@ class CrawlerController extends ControllerHelperNT {
 				preg_match_all('@/packages/([^"]*)"@i', $src, $matches);
 				$packages = array_unique($matches[1]);
 				foreach ($packages as $packageUri) {
-					$package = $this->getCrawler()->getPackage($platform, $packageUri);
+					$package = $this->getPlatform()->getPackage($platform, $packageUri);
 					if (!$package) {
 						$package = new \Zeutzheim\PpintBundle\Entity\Package();
 						$package->setName($packageUri);
@@ -76,10 +76,10 @@ class CrawlerController extends ControllerHelperNT {
 						$package->setPlatform($platform);
 						$this->getEntityManager()->persist($package);
 	
-						$this->getCrawler()->logger->info('A ' . $package->getPlatform()->getName() . ' ' . $package->getName());
+						$this->getPlatform()->logger->info('A ' . $package->getPlatform()->getName() . ' ' . $package->getName());
 					} else {
 						//$package->setCrawled(false);
-						//$this->getCrawler()->logger->info('U ' . $package->getPlatform()->getName() . ' ' . $package->getName());
+						//$this->getPlatform()->logger->info('U ' . $package->getPlatform()->getName() . ' ' . $package->getName());
 					}
 				}
 	
@@ -92,7 +92,7 @@ class CrawlerController extends ControllerHelperNT {
 		curl_close($ch);
 
 		//$this->getEntityManager()->flush();
-		$this->getCrawler()->logger->info('---- finished crawling packagist ----');
+		$this->getPlatform()->logger->info('---- finished crawling packagist ----');
 
 		exit ;
 		return new Response('finished');
@@ -104,8 +104,8 @@ class CrawlerController extends ControllerHelperNT {
 	public function crawlAction() {
 		@unlink(WEB_DIRECTORY . '../var/logs/ppint.last.log');
 
-		$this->getCrawler()->crawlPlatforms();
-		$this->getCrawler()->crawlPackages();
+		$this->getPlatform()->crawlPlatforms();
+		$this->getPlatform()->crawlPackages();
 
 		$html = '<html><head>';
 		//$html .= '<meta http-equiv="refresh" content="5">';
@@ -119,7 +119,7 @@ class CrawlerController extends ControllerHelperNT {
 	 * @Route("/crawl/platform/{platform}")
 	 */
 	public function crawlPlatformAction($platform = null) {
-		$this->getCrawler()->crawlPlatforms();
+		$this->getPlatform()->crawlPlatforms();
 		$log = $this->tailFile(WEB_DIRECTORY . '../var/logs/ppint.log', 200);
 		return new Response('<pre>' . $log . '</pre>');
 	}
@@ -128,7 +128,7 @@ class CrawlerController extends ControllerHelperNT {
 	 * @Route("/crawl/package/{package}")
 	 */
 	public function crawlPackageAction($package = null) {
-		$this->getCrawler()->crawlPackages(null, 20);
+		$this->getPlatform()->crawlPackages(null, 20);
 		$log = $this->tailFile(WEB_DIRECTORY . '../var/logs/ppint.log', 200);
 		return new Response('<pre>' . $log . '</pre>');
 	}

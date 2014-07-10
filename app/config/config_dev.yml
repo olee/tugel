@@ -25,6 +25,7 @@ monolog:
         console:
             type:   console
             bubble: false
+            channels: [!elastica]
             verbosity_levels:
                 VERBOSITY_NORMAL: INFO
         # uncomment to get logging in your browser
