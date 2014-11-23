@@ -3,8 +3,13 @@
 namespace Zeutzheim\PpintBundle\Model;
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Monolog\Logger;
+
+use Zeutzheim\PpintBundle\Exception\PackageNotFoundException;
+use Zeutzheim\PpintBundle\Exception\VersionNotFoundException;
+use Zeutzheim\PpintBundle\Exception\DownloadErrorException;
 
 use Zeutzheim\PpintBundle\Model\LanguageManager;
 use Zeutzheim\PpintBundle\Model\Language;
@@ -16,7 +21,7 @@ use Zeutzheim\PpintBundle\Entity\Version;
 abstract class Platform {
 	
 	const PLATFORM_STR_LEN = 12;
-	const PACKAGE_STR_LEN = 38;
+	const PACKAGE_STR_LEN = 46;
 	const VERSION_STR_LEN = 14;
 
 	/**
@@ -45,6 +50,21 @@ abstract class Platform {
 	protected $platformReference;
 
 	/**
+	 * @var EntityRepository
+	 */
+	protected $platformRepo;
+
+	/**
+	 * @var EntityRepository
+	 */
+	protected $packageRepo;
+
+	/**
+	 * @var EntityRepository
+	 */
+	protected $versionRepo;
+
+	/**
 	 * @var QueryBuilder
 	 */
 	protected $packageQb;
@@ -58,6 +78,9 @@ abstract class Platform {
 		$this->em = $em;
 		$this->logger = $logger;
 		$this->languageManager = $languageManager;
+		$this->platformRepo = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Platform');
+		$this->packageRepo = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package');
+		$this->versionRepo = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Version');
 	}
 
 	//*******************************************************************
@@ -104,17 +127,18 @@ abstract class Platform {
 		if ($this->getManagedEntityCount() > 60)
 			$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
 
-		// Load source
-		$src = $this->httpGet($this->getBaseUrl() . $package->getName());
-		if (!$src)
+		// Load data
+		$data = $this->httpGet($this->getPackageDataUrl($package));
+		if (!$data)
 			return false;
+		
+		// Get description
+		$package->setDescription($this->getPackageDataDescription($data));
 
-		// Find versions from source
-		preg_match_all($this->getVersionRegex(), $src, $matches);
-		// Make version list unique
-		$versions = array_unique($matches[1]);
-
+		// Find versions from data
+		$versions = array_unique($this->getPackageDataVersions($data));
 		foreach ($versions as $versionName) {
+			$versionName = (string) $versionName;
 			// Add version to package
 			$version = $this->getVersion($package, $versionName);
 			$newVersion = $version == null;
@@ -130,21 +154,19 @@ abstract class Platform {
 				//sleep(1);
 			}
 
-			// Check if a master-version was found
-			if ($version->getName() == $this->getPlatformEntity()->getMasterVersion() && $this->getMasterVersionTagRegex()) {
-				// Fetch the master-version identifiert (hash, date, etc.)
-				if (preg_match($this->getMasterVersionTagRegex(), $src, $matches)) {
-					// Check if the master-version is still up to date
-					if ($package->getMasterVersionTag() != $matches[1]) {
-						$package->setMasterVersionTag($matches[1]);
-						if (!$newVersion) {
-							$version->setIndexed(false);
-							$version->setNamespaces(null);
-							$version->setClasses(null);
-							$package->setIndexed(false);
+			// Check if a master-version was found and fetch the master-version identifiert (hash, date, etc.)
+			if ($version->getName() == $this->getMasterVersion() && $this->getPackageDataMasterVersion($data, $masterVersion)) {
+				// Check if the master-version is still up to date
+				if ($package->getMasterVersionTag() != $masterVersion) {
+					$package->setMasterVersionTag($masterVersion);
+					if (!$newVersion) {
+						$version->setIndexed(false);
+						$version->setNamespaces(null);
+						$version->setClasses(null);
+						$version->setAddedDate(new \DateTime());
+						$package->setIndexed(false);
 
-							$this->log('Version updated', $version);
-						}
+						$this->log('Version updated', $version);
 					}
 				}
 			}
@@ -155,14 +177,15 @@ abstract class Platform {
 		$this->getEntityManager()->flush();
 
 		if ($crawlLatestVersion) {
-			$this->indexVersion($this->getLatestVersion($package));
+			$this->index($this->getLatestVersion($package));
 		}
 
 		return true;
 	}
 
-	public function indexVersion(Version $version, $useExistingSource = true) {
-		$this->log('indexing...', $version);
+	public function index(Version $version, $useExistingSource = true) {
+		//$this->log('indexing... (use-existing-source: ' . ($useExistingSource ? 'true' : 'false') . ')', $version, Logger::DEBUG);
+		$this->log('indexing... (use-existing-source: ' . ($useExistingSource ? 'true' : 'false') . ')', $version, Logger::INFO);
 
 		// Set path for package download
 		$path = WEB_DIRECTORY . '../tmp/' . $version->getPackage()->getPlatform()->getName() . '/' . $version->getPackage()->getName() . '/' . $version->getName() . '/';
@@ -179,8 +202,6 @@ abstract class Platform {
 			// Download package source
 			//$this->log('downloading...', $version);
 			if (!$this->downloadVersion($version, $path)) {
-				$this->log('download failed', $version, Logger::ERROR);
-				$this->getEntityManager()->flush();
 				return false;
 			}
 			if (file_exists($path . '.git/'))
@@ -196,31 +217,66 @@ abstract class Platform {
 		//$this->log('scanning files', $version);
 		$files = $this->recursiveScandir($path);
 
+		// Index files
 		$i = 0;
 		$index = array();
 		foreach ($files as $file) {
 			foreach ($this->getLanguageManager()->getLanguages() as $lang) {
 				if ($lang->checkFilename($file)) {
-					$index = array_merge_recursive($index, array($lang->getName() => $lang->analyzeProvide(file_get_contents($file))));
+					$fileIndex = array($lang->getName() => $lang->analyzeProvide(file_get_contents($file)));
+					PackagePlatformIntegrationManager::mergeIndex($index, $fileIndex);
 				}
 			}
 		}
-		$index = $this->getLanguageManager()->collapseIndex($index);
+		//echo "\n\n"; print_r($index);
+		
+		$index = PackagePlatformIntegrationManager::collapseIndex($index);
+		// echo "\n\n"; print_r($index);
+		// exit;
 
 		$version->setClasses(!empty($index['class']) ? $index['class'] : null);
 		$version->setNamespaces(!empty($index['namespace']) ? $index['namespace'] : null);
 		$version->setLanguages(!empty($index['language']) ? $index['language'] : null);
+		$version->setCodeTags(!empty($index['tag']) ? $index['tag'] : null);
 		$version->setIndexed(true);
 		$version->getPackage()->setIndexed(true);
 		$this->getEntityManager()->flush();
 
-		$this->log('indexing finished', $version);
+		$this->log('indexed', $version);
 		return true;
+	}
+	
+	public function clearIndex(Version $version) {
+		$version->setClasses(null);
+		$version->setNamespaces(null);
+		$version->setIndexed(null);
+	}
+
+	public function downloadVersion(Version $version, $path) {
+		try {
+			return $this->doDownloadVersion($version, $path);
+		} catch (PackageNotFoundException $e) {
+			$this->log('package not found', $version, Logger::ERROR);
+			$version->getPackage()->setError(true);
+			$version->setError(true);
+			//$this->getEntityManager()->remove($version->getPackage());
+			$this->getEntityManager()->flush();
+		} catch (VersionNotFoundException $e) {
+			$this->log('version not found', $version, Logger::ERROR);
+			$version->setError(true);
+			$this->getEntityManager()->remove($version);
+			$this->getEntityManager()->flush();
+		} catch (DownloadErrorException $e) {
+			$this->log('download error', $version, Logger::ERROR);
+			$version->setError(true);
+			$this->getEntityManager()->flush();
+		}
+		return false;
 	}
 
 	//*******************************************************************
 
-	public abstract function downloadVersion(Version $version, $path);
+	public abstract function doDownloadVersion(Version $version, $path);
 
 	//*******************************************************************
 
@@ -232,19 +288,23 @@ abstract class Platform {
 
 	public abstract function getPackageRegex();
 
-	public abstract function getVersionRegex();
-
 	public abstract function getMasterVersion();
 
-	public abstract function getMasterVersionTagRegex();
-
+	public abstract function getPackageDataUrl(Package $package);
+	
+	public abstract function getPackageDataDescription($data);
+	
+	public abstract function getPackageDataVersions($data);
+	
+	public abstract function getPackageDataMasterVersion($data, &$masterVersion);
+	
 	//*******************************************************************
 
 	/**
 	 * @return array (integer)
 	 */
 	public function selectCrawlPackages() {
-		$qb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package')->createQueryBuilder('pkg');
+		$qb = $this->packageRepo->createQueryBuilder('pkg');
 		$qb->select('pkg.id')->where('pkg.crawled = FALSE')->andWhere('pkg.platform = ' . $this->getPlatformEntity()->getId())->orderBy('pkg.addedDate');
 		return $qb->getQuery()->getResult();
 	}
@@ -264,7 +324,7 @@ abstract class Platform {
 	 */
 	public function getPackage($url) {
 		if (!$this->packageQb) {
-			$this->packageQb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package')->createQueryBuilder('e');
+			$this->packageQb = $this->packageRepo->createQueryBuilder('e');
 			$this->packageQb->where('e.platform = ?1');
 			$this->packageQb->andWhere('e.url = ?2');
 		}
@@ -279,7 +339,7 @@ abstract class Platform {
 	 */
 	public function getVersion(Package $package, $name) {
 		if (!$this->versionQb) {
-			$this->versionQb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Version')->createQueryBuilder('v');
+			$this->versionQb = $this->versionRepo->createQueryBuilder('v');
 			$this->versionQb->where('v.package = ?0');
 			$this->versionQb->andWhere('v.name = ?1');
 		}
@@ -293,10 +353,19 @@ abstract class Platform {
 	 * @return Version
 	 */
 	public function getLatestVersion(Package $package) {
-		$repo = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Version');
-		$result = $repo->createQueryBuilder('v')->where('v.package = ' . $package->getId())->andWhere('v.name = ?0')->setParameters(array($this->getMasterVersion()))->getQuery()->getOneOrNullResult();
+		$result = $this->versionRepo->createQueryBuilder('v')->where('v.package = ' . $package->getId())->andWhere('v.name = ?0')->setParameters(array($this->getMasterVersion()))->getQuery()->getOneOrNullResult();
 		if (!$result)
-			$result = $repo->createQueryBuilder('v')->where('v.package = ' . $package->getId())->orderBy('v.addedDate')->setMaxResults(1)->getQuery()->getOneOrNullResult();
+			$result = $this->versionRepo->createQueryBuilder('v')->where('v.package = ' . $package->getId())->orderBy('v.addedDate')->setMaxResults(1)->getQuery()->getOneOrNullResult();
+		return $result;
+	}
+	
+	public function getIndexedVersion(Package $package) {
+		$result = $this->versionRepo->createQueryBuilder('v')
+			->where('v.package = ' . $package->getId())
+			->andWhere('v.indexed = true')
+			->setMaxResults(1)
+			->getQuery()
+			->getOneOrNullResult();
 		return $result;
 	}
 
@@ -330,11 +399,11 @@ abstract class Platform {
 	public function log($msg, $obj = null, $logLevel = Logger::INFO) {
 		if ($obj) {
 			if ($obj instanceof PlatformEntity)
-				$msg = str_pad($obj, Platform::PLATFORM_STR_LEN) . $msg;
+				$msg = str_pad($obj, Platform::PLATFORM_STR_LEN) . ' ' . $msg;
 			elseif ($obj instanceof Package)
-				$msg = str_pad($obj->getPlatform(), Platform::PLATFORM_STR_LEN) . str_pad($obj, Platform::PACKAGE_STR_LEN) . $msg;
+				$msg = str_pad($obj->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj, Platform::PACKAGE_STR_LEN) . ' ' . $msg;
 			elseif ($obj instanceof Version)
-				$msg = str_pad($obj->getPackage()->getPlatform(), Platform::PLATFORM_STR_LEN) . str_pad($obj->getPackage(), Platform::PACKAGE_STR_LEN) . str_pad($obj, Platform::VERSION_STR_LEN) . $msg;
+				$msg = str_pad($obj->getPackage()->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj->getPackage(), Platform::PACKAGE_STR_LEN) . ' ' . str_pad($obj, Platform::VERSION_STR_LEN) . ' ' . $msg;
 			elseif (is_string($obj))
 				$msg = $obj . ' ' . $msg;
 		}
@@ -390,7 +459,7 @@ abstract class Platform {
 	 */
 	public function getPlatformEntity() {
 		if (!$this->platformEntity) {
-			$this->platformEntity = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Platform')->findOneByName($this->getName());
+			$this->platformEntity = $this->platformRepo->findOneByName($this->getName());
 			if (!$this->platformEntity) {
 				$this->platformEntity = new PlatformEntity();
 				$this->platformEntity->setName($this->getName());

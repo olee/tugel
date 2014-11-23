@@ -55,6 +55,7 @@ class Package {
 	 * @var \Zeutzheim\PpintBundle\Entity\Platform
 	 *
 	 * @ORM\OneToMany(targetEntity="Version", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
+     * @ORM\OrderBy({"addedDate" = "ASC"})
 	 * @JMS\Exclude
 	 */
 	private $versions;
@@ -89,9 +90,15 @@ class Package {
 
 	/**
 	 * @var \DateTime
-	 * @ORM\Column(name="added_date", type="datetime")
+	 * @ORM\Column(name="added_date", type="datetime", nullable=false)
 	 */
 	private $addedDate;
+
+	/**
+	 * @var \DateTime
+	 * @ORM\Column(name="indexed_date", type="datetime", nullable=true)
+	 */
+	private $indexedDate;
 
 	//*******************************************************************
 
@@ -233,6 +240,7 @@ class Package {
 	 */
 	public function setIndexed($indexed) {
 		$this->indexed = $indexed;
+		$this->indexedDate = new \DateTime();
 		return $this;
 	}
 
@@ -287,6 +295,28 @@ class Package {
 	 */
 	public function getAddedDate() {
 		return $this->addedDate;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set indexedDate
+	 *
+	 * @param \DateTime $indexedDate
+	 * @return Version
+	 */
+	public function setIndexedDate($indexedDate) {
+		$this->indexedDate = $indexedDate;
+		return $this;
+	}
+
+	/**
+	 * Get indexedDate
+	 *
+	 * @return \DateTime
+	 */
+	public function getIndexedDate() {
+		return $this->indexedDate;
 	}
 
 	//*******************************************************************

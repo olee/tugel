@@ -1,0 +1,66 @@
+<div role="navigation" class="navbar navbar-inverse navbar-fixed-top">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			{% spaceless %}
+			<button data-target=".navbar-collapse" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
+				<span class="sr-only">{{ 'Toggle navigation' }}</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			{% endspaceless %}
+			
+			<a href="{{ app.request.getBaseURL() }}" class="navbar-brand">{{ 'PPINT' }}</a>
+		</div>
+		<div class="navbar-collapse collapse" style="height: 1px;">
+			{% spaceless %}
+			<ul class="nav navbar-nav">
+				{% set currentRoute = app.request.get('_route') %}
+				{% set navigation = {
+					home: {label:'Home'},
+					about: {label:'About'},
+					api_get: {label:'API', args:{_format:'html'}},
+				} %}
+				{% set navigation = {
+					home: {label:'Home'},
+				} %}
+				{% if app.user is not empty and is_granted("ROLE_ADMIN") %}
+					{% set navigation = navigation|merge({
+						admin_config: 'navigation.administration'|trans,
+					}) %}
+				{% endif %}
+				{% for route,data in navigation %}
+					<li {{ currentRoute == route ? 'class="active"' : '' }}><a href="{{ path(route, data.args is defined ? data.args : {}) }}">{{ data.label }}</a></li>
+				{% endfor %}
+			</ul>
+			{% endspaceless %}
+			
+			<div class="navbar-right">
+				{% spaceless %}
+				<ul class="nav navbar-nav">
+					{% for locale,img in {de:'de', en:'en_US'} %}
+						<li {% if app.request.get('_locale') == locale %}class="active"{% endif %}>
+							<a href="{{ path(app.request.get('_route'), app.request.get('_route_params')|merge({'_locale': locale})) }}"><img src="{{ asset('bundles/zeutzheimppint/images/locales/' ~ img ~ '.png') }}"></a>
+						</li>
+					{% endfor %}
+				</ul>
+				{% endspaceless %}
+{#% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+				<span class="navbar-text">{{ 'layout.logged_in_as'|trans({'%username%': app.user.username}, 'FOSUserBundle') }}</span>
+				<a class="btn btn-warning navbar-btn" href="{{ path('fos_user_security_logout') }}">{{ 'layout.logout'|trans({}, 'FOSUserBundle') }}</a>
+{% else %}
+				<form class="nav navbar-nav navbar-form navbar-right dark" id="navbar_login_form" role="form" action="{{ path("fos_user_security_check") }}" method="POST">
+					<div class="form-group">
+						<input type="text" class="form-control" size="12" id="navbar_username" name="_username" required="required" placeholder="Username">
+					</div>
+					<div class="form-group">
+						<input type="password" class="form-control" size="12" id="navbar_password" name="_password" required="required" placeholder="Password">
+					</div>
+					<button class="btn btn-success" type="submit">{{ 'security.login.submit'|trans({},'FOSUserBundle') }}</button>
+					<a class="btn btn-primary" href="{{ path("fos_user_registration_register") }}">{{ 'layout.register'|trans({},'FOSUserBundle') }}</a>
+				</form>
+{% endif %#}
+			</div>
+		</div>
+	</div>
+</div>

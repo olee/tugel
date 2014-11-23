@@ -1,0 +1,10 @@
+fos_oauth_server:
+    db_driver: orm
+    client_class:        FourTeachers\LehrerappBundle\Entity\OAuthClient
+    access_token_class:  FourTeachers\LehrerappBundle\Entity\OAuthAccessToken
+    refresh_token_class: FourTeachers\LehrerappBundle\Entity\OAuthRefreshToken
+    auth_code_class:     FourTeachers\LehrerappBundle\Entity\OAuthAuthCode
+    service:
+        user_provider: fos_user.user_manager
+        options:
+            supported_scopes: anonymous read write full

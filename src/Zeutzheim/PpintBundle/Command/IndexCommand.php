@@ -22,6 +22,8 @@ class IndexCommand extends ContainerAwareCommand {
 			new InputArgument('version', InputArgument::OPTIONAL, 'The version which should be scanned'),
 		));
 		$this->addOption('maxtime', 't', InputOption::VALUE_OPTIONAL, 'The maximum execution time', 60);
+		$this->addOption('cachesize', 'c', InputOption::VALUE_NONE, 'Print the cachesize on start');
+		$this->addOption('redownloadmaster', 'r', InputOption::VALUE_NONE, 'Redownload master-versions');
 		$this->setDescription("Analyze one or more packages and add them to the index.\n
 The command can index all packages, all packages of a platform or a single package, depending on the arguments specified.\n
 If the version is not specified, the command tries to pick the newest version.");
@@ -33,7 +35,14 @@ If the version is not specified, the command tries to pick the newest version.")
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		//echo "Result = " . $this->httpGet('https://api.github.com/repos/geissler/converter' . '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7') . "\n"; exit;
 		$ppint = $this->getContainer()->get('ppint.manager');
-		if ($ppint->index($input->getArgument('platform'), $input->getArgument('package'), $input->getArgument('version'), $input->getOption('maxtime'))) {
+		if ($ppint->index(
+			$input->getArgument('platform'), 
+			$input->getArgument('package'), 
+			$input->getArgument('version'), 
+			$input->getOption('maxtime'), 
+			$input->getOption('cachesize'), 
+			$input->getOption('redownloadmaster')))
+		{
 			$this->getContainer()->get('ppint.logger')->info('> Successfully indexd packages.');
 		} else {
 			$this->getContainer()->get('ppint.logger')->info('> Error while analyzing packages!');

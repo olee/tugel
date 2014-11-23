@@ -34,23 +34,30 @@ class Version {
 	/**
 	 * @var string
 	 *
-	 * @ORM\Column(name="name", type="string", length=127, nullable=false)
+	 * @ORM\Column(name="name", type="string", nullable=false)
 	 */
 	private $name;
 
 	/**
 	 * @var string
 	 *
-	 * @ORM\Column(name="namespaces", type="string", length=131072, nullable=true)
+	 * @ORM\Column(name="namespaces", type="text", nullable=true)
 	 */
 	private $namespaces;
 
 	/**
 	 * @var string
 	 *
-	 * @ORM\Column(name="classes", type="string", length=131072, nullable=true)
+	 * @ORM\Column(name="classes", type="text", nullable=true)
 	 */
 	private $classes;
+
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="codetags", type="text", nullable=true)
+	 */
+	private $codeTags;
 
 	/**
 	 * @var string
@@ -186,6 +193,28 @@ class Version {
 	 */
 	public function getClasses() {
 		return $this->classes;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set codeTags
+	 *
+	 * @param string $codeTags
+	 * @return Version
+	 */
+	public function setCodeTags($codeTags) {
+		$this->codeTags = $codeTags;
+		return $this;
+	}
+
+	/**
+	 * Get codeTags
+	 *
+	 * @return string
+	 */
+	public function getCodeTags() {
+		return $this->codeTags;
 	}
 
 	//*******************************************************************

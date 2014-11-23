@@ -28,38 +28,5 @@ class LanguageManager {
 	public function getLanguage($name) {
 		return $this->languages[$name];
 	}
-	
-	/**
-	 * @return array
-	 */
-	public function collapseIndex($index) {
-		/*
-		foreach ($index as &$types)
-			foreach ($types as &$identifiers)
-				$identifiers = array_unique($identifiers);
-		$namespaces = '';
-		$classes = '';
-		foreach ($result as $lang => $types) {
-			$namespaces .= implode(' ', $types['namespace']) . ' ';
-			$classes .= implode(' ', $types['class']) . ' ';
-		}
-		return array(
-			'languages' => implode(' ', array_keys($result)),
-			'namespaces' => $namespaces,
-			'classes' => $classes,
-		);
-		*/
-		$result = array(
-			'language' => implode(' ', array_keys($index)),
-		);
-		foreach ($index as $lang => $types) {
-			foreach ($types as $type => $identifiers) {
-				$identifiers = array_unique($identifiers);
-				foreach ($identifiers as $identifier) {
-					$result[$type] = (isset($result[$type]) ? $result[$type] . ' ' : '') . $lang . ':' . $identifier;
-				}
-			}
-		}
-		return $result;
-	}
+
 }

@@ -1,0 +1,32 @@
+account: 
+  label: Account
+  label.pl: Accounts
+  alreadyregisteredquestion: "Already registered?"
+  forgotpassword: "Forgot password?"
+  notyetregisteredquestion: "Not yet registered?"
+  
+  registration:
+    completed: Registration completed
+    confirmed: Registration confirmed
+  
+  alreadyregisteredquestionlogin: Login
+  reset: Reset
+  resetting: Reset password
+  management: Account management
+  user: User
+
+  username: Username
+  password: Password
+  
+  address1: Address 1
+  address2: Address 2
+  city: City
+  country: Country
+  firstName: First name
+  lastName: Last name
+  postalCode: Postal code
+
+home:
+  title: Welcome to PPINT!
+  subtitle: |
+    PPINT - Package Platform Integration Tool

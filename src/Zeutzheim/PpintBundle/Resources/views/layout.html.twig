@@ -1,0 +1,91 @@
+{% extends '::base.html.twig' %}
+
+{% block meta_title 'Package Platform Integration' %}
+
+{% block body_attr 'class="dark"' %}
+
+{% block header %}
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="author" content="Björn Zeutzheim">
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block stylesheets %}
+{% stylesheets
+		'bundles/zeutzheimppint/bootstrap/css/bootstrap.min.css'
+		'bundles/zeutzheimppint/bootstrap/css/bootstrap-theme.min.css'
+		'bundles/zeutzheimppint/css/bootstrap-style.less'
+		'bundles/zeutzheimppint/css/style.less'
+		'bundles/zeutzheimppint/css/dashboard.css'
+		output='css/styles.css'
+		filter='cssrewrite'
+		filter='?yui_css' %}
+	<link href="{{ asset_url }}" rel="stylesheet">
+{% endstylesheets %}
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block header_js %}
+{% javascripts 
+		'bundles/zeutzheimppint/js/lib/jquery-1.11.0.min.js'
+		'bundles/zeutzheimppint/js/lib/purl.min.js'
+		'bundles/zeutzheimppint/js/lib/jquery.imageloader.js'
+		'bundles/zeutzheimppint/js/lib/jquery.imageloader.helper.js'
+		'bundles/zeutzheimppint/js/setupFormCollection.js'
+		'bundles/zeutzheimppint/bootstrap/js/bootstrap.min.js'
+		output='js/lib.js'
+		filter='?yui_js' %}
+	<script src="{{ asset_url }}"></script>
+{% endjavascripts %}
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block javascripts %}
+	{% javascripts 
+		'bundles/zeutzheimppint/js/lib/holder.js'
+		'bundles/zeutzheimppint/js/lib/jquery.placeholder.js'
+		output='js/postload_lib.js'
+		filter='?yui_js' %}
+		<script src="{{ asset_url }}"></script>
+	{% endjavascripts %}
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block body %}
+
+<!-- NAVBAR -->
+{% block navbar %}{% include "@ZeutzheimPpint/navbar.html.twig" %}{% endblock %}
+
+<!-- CONTENT -->
+{% block content %}
+	<div class="jumbotron header" id="header">
+		<div class="container">
+			<img class="jumbotron-image" src="{{ asset('bundles/zeutzheimppint/images/tokitime_logo.png') }}">
+			<h1>{{ 'home.title'|trans }}</h1>
+		</div>
+	</div>
+{% endblock %}
+
+<!-- FLASH -->
+{% set flashGroups = app.session.flashbag.all %}
+{% if flashGroups|length > 0 %}{% spaceless %}
+	<div class="container alerts">
+		<br>
+		{% for label,flashes in flashGroups %}{% for flash in flashes %}
+			<div class="alert alert-{% if label not in ['success','info','warning','danger'] %}{{ 'info' }}{% else %}{{ label }}{% endif %}">
+				{{ label|capitalize }}
+				<span class="glyphicon glyphicon-chevron-right"> </span>
+				{{ flash|capitalize }}
+			</div>
+		{% endfor %}{% endfor %}
+	</div>
+{% endspaceless %}{% endif %}
+
+<!-- FOOTER -->
+{% block footer %}{% include "@ZeutzheimPpint/footer.html.twig" %}{% endblock %}
+
+{% endblock %}
