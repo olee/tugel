@@ -21,7 +21,13 @@ use Zeutzheim\PpintBundle\Entity\Version;
 
 use FOS\ElasticaBundle\Finder\FinderInterface;
 use FOS\ElasticaBundle\Finder\TransformedFinder;
+
 use Elastica\Query;
+use Elastica\Query as ESQ;
+use Elastica\Filter as ESF;
+use Elastica\Query\Terms;
+use Elastica\Query\Bool;
+use Elastica\Query\FunctionScore;
 
 class PackagePlatformIntegrationManager {
 
@@ -49,6 +55,10 @@ class PackagePlatformIntegrationManager {
 	 * @var FinderInterface
 	 */
 	private $finder;
+	
+	private $transformedFinderAccessHelper;
+	
+	public $lastQuery;
 
 	public function __construct(EntityManagerInterface $em, Logger $logger, PlatformManager $platformManager, LanguageManager $languageManager, FinderInterface $finder) {
 		$this->em = $em;
@@ -56,6 +66,7 @@ class PackagePlatformIntegrationManager {
 		$this->platformManager = $platformManager;
 		$this->languageManager = $languageManager;
 		$this->finder = $finder;
+		$this->transformedFinderAccessHelper = new TransformedFinderAccessHelper();
 	}
 
 	//*******************************************************************
@@ -134,11 +145,12 @@ class PackagePlatformIntegrationManager {
 		}
 		
 		$index = array();
-		foreach ($this->getLanguageManager()->getLanguages() as $lang)
+		foreach ($this->getLanguageManager()->getLanguages() as $lang) {
 			if ($lang->checkFilename($filename)) {
 				$fileIndex = array($lang->getName() => $lang->analyzeUse($src));
 				PackagePlatformIntegrationManager::mergeIndex($index, $fileIndex);
 			}
+		}
 		$index = PackagePlatformIntegrationManager::collapseIndex($index);
 		
 		return $this->findPackages($index['namespace'], $index['class'], $index['language']);
@@ -146,64 +158,96 @@ class PackagePlatformIntegrationManager {
 
 	//*******************************************************************
 	
-	public function findPackages($namespaces = null, $classes = null, $languages = null, $tags = null) {
-		$query = new \Elastica\Query\Bool();
+	public function findPackages($namespaces = null, $classes = null, $languages = null, $codetags = null) {
+		$query = new Bool();
 		
-		if (!$namespaces && !$classes && !$languages && !$tags)
+		if (!$namespaces && !$classes && !$languages && !$codetags)
 			return array();
 		
 		if ($namespaces) {
-			$fieldQuery = new \Elastica\Query\Match();
-			$fieldQuery->setFieldQuery('namespaces', $namespaces);
-			$fieldQuery->setFieldParam('namespaces', 'analyzer', 'identifier');
-			$query->addShould($fieldQuery);
+			$match = new ESQ\Match();
+			$match->setFieldQuery('namespaces', $namespaces);
+			$match->setFieldParam('namespaces', 'analyzer', 'identifier');
+			$query->addShould($match);
 		}
 		
 		if ($classes) {
-			$fieldQuery = new \Elastica\Query\Match();
-			$fieldQuery->setFieldQuery('classes', $classes);
-			$fieldQuery->setFieldParam('classes', 'analyzer', 'identifier');
-			$query->addShould($fieldQuery);
+			$match = new ESQ\Match();
+			$match->setFieldQuery('classes', $classes);
+			$match->setFieldParam('classes', 'analyzer', 'identifier');
+			$query->addShould($match);
 		}
 		
 		if ($languages) {
-			$fieldQuery = new \Elastica\Query\Match();
-			$fieldQuery->setFieldQuery('languages', $languages);
-			$fieldQuery->setFieldParam('languages', 'analyzer', 'whitespace');
-			$query->addShould($fieldQuery);
+			$match = new ESQ\Match();
+			$match->setFieldQuery('languages', strtolower($languages));
+			$match->setFieldParam('languages', 'analyzer', 'whitespace');
+			$query->addMust($match);
 		}
 		
-		if ($tags) {
-			$fieldQuery = new \Elastica\Query\Match();
-			$fieldQuery->setFieldQuery('tags', $tags);
-			$fieldQuery->setFieldParam('tags', 'analyzer', 'whitespace');
-			$query->addShould($fieldQuery);
+		if ($codetags) {
+			$terms = explode(' ', strtolower($codetags));
+			
+			$termsQuery = new ESF\Terms();
+			$termsQuery->setTerms('codeTags.name', $terms);
+			
+			$script = <<<EOM
+max = 1;
+sum = 0;
+for (tag in _source.codeTags) {
+	if (tag.count > max) {
+		max = tag.count;
+	};
+	for (term in terms) {
+		if (tag.name == term) {
+			sum += tag.count;
+		}
+	}
+};
+10 * sum / ((float) max + 1);
+EOM;
+			$script = str_replace("\t", '', str_replace("\n", ' ', str_replace("\r", '', $script)));
+			
+			// $script = 'query-codeTags';
+			
+			$functionQuery = new FunctionScore();
+			$functionQuery->setScoreMode('sum');
+			$functionQuery->setBoostMode('replace');
+			// $functionQuery->addFunction('field_value_factor', array('field' => 'codeTags.count'));
+			$functionQuery->addFunction('script_score', array('script' => $script, 'params' => array('terms' => $terms)));
+			$functionQuery->setFilter($termsQuery);
+			
+			$query->addMust($functionQuery);
 		}
 		
 		//print_r($index);
-		//print_r($boolQuery->toArray());
-		//print_r(json_encode($boolQuery->toArray()));
+		// echo '<pre>'; print_r($query->toArray()); exit;
+		//echo '<pre>'; print_r(json_encode($query->toArray())); exit;
 		
-		//echo json_encode(array("query" => $boolQuery->toArray())) . "\n";
+		// return $this->findWithScore($query);
 		
+		$query = Query::create($query);
+        $query->setSize(25);
+		$this->lastQuery = $query->toArray();
 		
-        $queryObject = Query::create($query);
-        //$queryObject->setSize(100);
-        $accessHelper = new TransformedFinderAccessHelper();
-        $queryResults = $accessHelper->getSearchable($this->finder)->search($queryObject, array())->getResults();
-        $results = $accessHelper->getTransformer($this->finder)->transform($queryResults);
-		
-		//echo '<pre>';
-		//print_r($queryResults); exit;
-		
+		return $this->findWithScore($query);
+		// return $this->finder->find($query);
+	}
+
+	public function findWithScore($query, $limit = null) {
+		$queryObject = Query::create($query);
+        if (null !== $limit) {
+            $queryObject->setSize($limit);
+        }
+		$this->lastQuery = $queryObject->toArray();
+        
+		$queryResults = $this->transformedFinderAccessHelper->getSearchable($this->finder)->search($queryObject)->getResults();
+        $results = $this->transformedFinderAccessHelper->getTransformer($this->finder)->transform($queryResults);
 		foreach ($results as $key => $entity) {
 			$hit = $queryResults[$key]->getHit();
 			$entity->_score = $hit['_score'];
 		}
         return $results;
-		
-		
-		return $this->finder->find($query);
 	}
 
 	//*******************************************************************
@@ -253,7 +297,7 @@ class PackagePlatformIntegrationManager {
 		$cnt = 0;
 		foreach ($packages as $package) {
 			// Fetch package
-			$this->getEntityManager()->clear();
+			//$this->getEntityManager()->clear();
 			//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
 			//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
 			$package = $packageRepository->find($package);
@@ -274,11 +318,13 @@ class PackagePlatformIntegrationManager {
 					'(other error)'), $version, Logger::NOTICE);
 			}
 
-			if ($cnt++ > 100) {
+			if ($cnt++ > 20) {
 				$cnt = 0;
 				$this->getEntityManager()->flush();
-				$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
-				$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
+				$this->getEntityManager()->clear();
+				//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
+				//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
+				//$this->getEntityManager()->clear('ZeutzheimPpintBundle:CodeTag');
 			}
 			
 			if (time() - $startTime > $maxTime) {
@@ -311,8 +357,10 @@ class PackagePlatformIntegrationManager {
 				if ($cnt++ > 100) {
 					$cnt = 0;
 					$this->getEntityManager()->flush();
-					$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
-					$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
+					$this->getEntityManager()->clear();
+					//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
+					//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
+					//$this->getEntityManager()->clear('ZeutzheimPpintBundle:CodeTag');
 				}
 				
 				if ($indexedVersion == $version) {
@@ -455,10 +503,18 @@ class PackagePlatformIntegrationManager {
 	 */
 	public static function collapseIndex($index) {
 		$result = array(
-			'language' => implode(' ', array_keys($index)),
+			'language' => strtolower(implode(' ', array_keys($index))),
 		);
 		foreach ($index as $lang => $types) {
 			foreach ($types as $type => $identifiers) {
+				if ($type == 'tag') {
+					if (!array_key_exists($type, $result))
+						$result[$type] = array();
+					foreach ($identifiers as $identifier => $count) {
+						Utils::array_add($result[$type], strtolower($identifier), $count);
+					}
+					continue;
+				}
 				$data = '';
 				if ($type == 'namespace' || $type == 'class')
 					$prefix = $lang . ':';

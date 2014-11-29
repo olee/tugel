@@ -10,7 +10,7 @@ class Java extends Language {
 	public function analyzeProvide($src) {
 		$tags = array();
 		
-		preg_match_all('@(?:^|\\s)package\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*)\\s*;@', $src, $matches);
+		preg_match_all('@(?:^|\\s)package\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][^\\s;]*)(?:\\s|;)@', $src, $matches);
 		$namespaces = array();
 		foreach ($matches[1] as $namespace) {
 			$namespaces[$namespace] = 1;

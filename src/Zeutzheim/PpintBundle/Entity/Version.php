@@ -53,9 +53,10 @@ class Version {
 	private $classes;
 
 	/**
-	 * @var string
+	 * @var \Zeutzheim\PpintBundle\Entity\CodeTag
 	 *
-	 * @ORM\Column(name="codetags", type="text", nullable=true)
+	 * @ORM\OneToMany(targetEntity="CodeTag", mappedBy="version", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
+     * @ORM\OrderBy({"count" = "DESC"})
 	 */
 	private $codeTags;
 
@@ -196,27 +197,39 @@ class Version {
 	}
 
 	//*******************************************************************
+	
+    /**
+     * Add codeTags
+     *
+     * @param \Zeutzheim\PpintBundle\Entity\CodeTag $codeTags
+     * @return Version
+     */
+    public function addCodeTag(\Zeutzheim\PpintBundle\Entity\CodeTag $codeTags)
+    {
+        $this->codeTags[] = $codeTags;
+        return $this;
+    }
 
-	/**
-	 * Set codeTags
-	 *
-	 * @param string $codeTags
-	 * @return Version
-	 */
-	public function setCodeTags($codeTags) {
-		$this->codeTags = $codeTags;
-		return $this;
-	}
+    /**
+     * Remove codeTags
+     *
+     * @param \Zeutzheim\PpintBundle\Entity\CodeTag $codeTags
+     */
+    public function removeCodeTag(\Zeutzheim\PpintBundle\Entity\CodeTag $codeTags)
+    {
+        $this->codeTags->removeElement($codeTags);
+    }
 
-	/**
-	 * Get codeTags
-	 *
-	 * @return string
-	 */
-	public function getCodeTags() {
-		return $this->codeTags;
-	}
-
+    /**
+     * Get codeTags
+     *
+     * @return \Doctrine\Common\Collections\Collection 
+     */
+    public function getCodeTags()
+    {
+        return $this->codeTags;
+    }
+	
 	//*******************************************************************
 
 	/**
@@ -306,5 +319,26 @@ class Version {
 	}
 
 	//*******************************************************************
+
+
+    /**
+     * Get indexed
+     *
+     * @return boolean 
+     */
+    public function getIndexed()
+    {
+        return $this->indexed;
+    }
+
+    /**
+     * Get error
+     *
+     * @return boolean 
+     */
+    public function getError()
+    {
+        return $this->error;
+    }
 
 }

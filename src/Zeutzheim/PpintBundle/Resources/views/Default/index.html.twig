@@ -8,31 +8,36 @@
 	
 	<h2>Suche</h2>
 	{{ form(searchForm) }}
-	{% if searchResults %}
+	{% if searchResults is defined %}
 		<hr>
-		<h2>Suchergebnisse</h2>
-		<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-			<thead>
-				<tr>
-					<th style="width:66px;">ID</th>
-					<th>Name</th>
-					<th>Version</th>
-					<th style="width:100px;">Platform</th>
-					<th style="width:60px;">Score</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for id,version in searchResults %}
-				<tr>
-					<td>{{ version.id }}</td>
-					<td><a target="_blank" href="{{ version.package.platform.baseUrl ~ version.package.url }}">{{ version.package.name }}</a></td>
-					<td>{{ version.name }}</td>
-					<td>{{ version.package.platform.name }}</td>
-					<td>{{ version._score|number_format(3) }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+		<h2 id="search-results">Search results</h2>
+		{% if searchResults is empty %}
+			<h3>No results</h3>
+		{% else %}
+			<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
+				<thead>
+					<tr>
+						<th style="width:66px;">ID</th>
+						<th>Name</th>
+						<th>Version</th>
+						<th style="width:100px;">Platform</th>
+						<th style="width:60px;">Score</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for id,version in searchResults %}
+					<tr>
+						<td>{{ version.id }}</td>
+						<td><a target="_blank" href="{{ version.package.platform.baseUrl ~ version.package.url }}">{{ version.package.name }}</a></td>
+						<td>{{ version.name }}</td>
+						<td>{{ version.package.platform.name }}</td>
+						<td>{{ version._score|number_format(3) }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endif %}
+		<pre>{{ lastQuery }}</pre>
 	{% endif %}
 	
 	<hr>

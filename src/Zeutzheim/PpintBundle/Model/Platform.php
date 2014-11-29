@@ -17,6 +17,7 @@ use Zeutzheim\PpintBundle\Model\Language;
 use Zeutzheim\PpintBundle\Entity\Platform as PlatformEntity;
 use Zeutzheim\PpintBundle\Entity\Package;
 use Zeutzheim\PpintBundle\Entity\Version;
+use Zeutzheim\PpintBundle\Entity\CodeTag;
 
 abstract class Platform {
 	
@@ -228,16 +229,23 @@ abstract class Platform {
 				}
 			}
 		}
-		//echo "\n\n"; print_r($index);
+		// echo "\n\n"; print_r($index); exit;
 		
 		$index = PackagePlatformIntegrationManager::collapseIndex($index);
 		// echo "\n\n"; print_r($index);
 		// exit;
 
-		$version->setClasses(!empty($index['class']) ? $index['class'] : null);
-		$version->setNamespaces(!empty($index['namespace']) ? $index['namespace'] : null);
-		$version->setLanguages(!empty($index['language']) ? $index['language'] : null);
-		$version->setCodeTags(!empty($index['tag']) ? $index['tag'] : null);
+		$version->setClasses(array_get($index, 'class'));
+		$version->setNamespaces(array_get($index, 'namespace'));
+		$version->setLanguages(array_get($index, 'language'));
+		foreach ((array_key_exists('tag', $index) ? $index['tag'] : array()) as $name => $count) {
+			$tag = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:CodeTag')->find(array('version' => $version, 'name' => $name));
+			if ($tag == null) {
+				$this->getEntityManager()->persist(new CodeTag($version, $name, $count));
+			} else {
+				$tag->setCount($count);
+			}
+		}
 		$version->setIndexed(true);
 		$version->getPackage()->setIndexed(true);
 		$this->getEntityManager()->flush();
@@ -463,6 +471,7 @@ abstract class Platform {
 			if (!$this->platformEntity) {
 				$this->platformEntity = new PlatformEntity();
 				$this->platformEntity->setName($this->getName());
+				$this->platformEntity->setBaseUrl($this->getBaseUrl());
 				$this->getEntityManager()->persist($this->platformEntity);
 				$this->getEntityManager()->flush();
 			}
@@ -481,4 +490,11 @@ abstract class Platform {
 	}
 
 	//*******************************************************************
+}
+
+function array_get($array, $index) {
+	if (array_key_exists($index, $array))
+		return $array[$index];
+	else
+		return null;
 }

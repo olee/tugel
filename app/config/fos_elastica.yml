@@ -14,6 +14,7 @@ fos_elastica:
 #                                type: whitespace
                             whitespace:
                                 type: whitespace
+                                lowercase: true
                             identifier:
                                 type: pattern
                                 pattern: "[\\:\\.\\W\\\\]+"
@@ -43,10 +44,16 @@ fos_elastica:
                                 id: ~ #{ boost: 5 }
                                 name: ~ #{ boost: 5 }
                                 description: ~ #{ boost: 5 }
+                        codeTags:
+                            type: "object"
+                            store: "yes"
+                            properties:
+                                name: ~ #{ boost: 5 }
+                                count:
+                                  type: "integer"
                         languages: { analyzer: whitespace }
                         namespaces: { analyzer: identifier }
                         classes: { boost: 1, analyzer: identifier }
-                        codeTags: { analyzer: whitespace }
                     persistence:
                         driver: orm
                         model: Zeutzheim\PpintBundle\Entity\Version

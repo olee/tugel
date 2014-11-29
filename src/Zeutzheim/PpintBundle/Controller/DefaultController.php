@@ -44,6 +44,7 @@ class DefaultController extends ControllerHelperNT {
 			'required' => false,
 		));
 		$form->add('submit', 'submit', array('label' => 'Suchen'));
+		$form->setAction('#search-results');
 		$form = $form->getForm();
 
 		if ('POST' === $request->getMethod()) {
@@ -65,12 +66,19 @@ class DefaultController extends ControllerHelperNT {
 				$this->reportAllFormErrors($form);
 			}
 		}
-
-		return array(
+		
+		$params = array(
 			'searchForm' => $form->createView(),
 			'platforms' => $this->getPlatformData(),
-			'searchResults' => isset($searchResults) ? $searchResults : null,
 		);
+		
+		if (isset($searchResults))
+		{
+			$params['searchResults'] = $searchResults;
+			$params['lastQuery'] = json_encode($this->get('ppint.manager')->lastQuery, JSON_PRETTY_PRINT);
+		}
+		
+		return $params;
 	}
 
 	public function getPlatformData() {

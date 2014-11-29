@@ -23,7 +23,8 @@
         "incenteev/composer-parameter-handler": "~2.0",
 		"leafo/lessphp": "dev-master",
         "jms/serializer-bundle": "0.13.*",
-        "friendsofsymfony/elastica-bundle": "~3.0@dev"
+        "friendsofsymfony/elastica-bundle": "~3.0@dev",
+        "nikic/PHP-Parser": "dev-master"
     },
     "require-dev": {
         "sensio/generator-bundle": "~2.3"
