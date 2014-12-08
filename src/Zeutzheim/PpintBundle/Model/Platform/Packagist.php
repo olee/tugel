@@ -72,28 +72,33 @@ class Packagist extends Platform {
 		return '@<link>https://packagist.org/packages/([^<]*)</link>@i';
 	}
 
-	public function getPackageDataUrl(Package $package) {
-		return $this->getBaseUrl() . $package->getName() . '.json';
+	public function getPackageData(Package $package) {
+		$json = $this->httpGet($this->getBaseUrl() . $package->getName() . '.json');
+        if ($json === false) {
+            // echo 'Error downloading data'; exit;
+            return false;
+        }
+        
+        $data = json_decode($json, TRUE);
+        if ($data === null) {
+            // echo 'Error reading data'; exit;
+            return false;
+        }
+        
+        // Get basic package information
+        $pkgData = array(
+            'description' => $data['package']['description'],
+            'versions' => array_keys($data['package']['versions']),
+        );
+        
+        // Get master version reference
+        $data = $data['package']['versions']['dev-master'];
+        if (array_key_exists('source', $data))
+            $pkgData['master'] = $data['source']['reference'];
+        else
+            $pkgData['master'] = $data['dist']['reference'];
+            
+        return $pkgData;
 	}
 	
-	public function getPackageDataDescription($data) {
-		$data = json_decode($data, true);
-		return $data['package']['description'];
-	}
-	
-	public function getPackageDataVersions($data) {
-		$data = json_decode($data, true);
-		$data = array_keys($data['package']['versions']);
-		return $data;
-	}
-	
-	public function getPackageDataMasterVersion($data, &$masterVersion) {
-		$data = json_decode($data, true);
-		$data = $data['package']['versions']['dev-master'];
-		if (array_key_exists('source', $data))
-			return $data['source']['reference'];
-		else
-			return $data['dist']['reference'];
-	}
-
 }

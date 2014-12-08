@@ -10,6 +10,9 @@ use Symfony\Component\Console\Input\InputOption;
 
 use Zeutzheim\PpintBundle\Util\Utils;
 
+use Zeutzheim\PpintBundle\Entity\Platform;
+use Zeutzheim\PpintBundle\Entity\Package;
+
 class TestCommand extends ContainerAwareCommand {
 	/**
 	 * @see Command
@@ -33,88 +36,28 @@ If the version is not specified, the command tries to pick the newest version.")
         */
 	}
     
-    public function index($stmts, &$index) {
-        foreach ($stmts as $idx => $stmt) {
-            switch (variable) {
-                case 'value':
-                    
-                    break;
-                
-                default:
-                    
-                    break;
-            }
-        }
-    }
-
 	/**
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-
-        $src = file_get_contents('test-parse.php');
-
-        ini_set('xdebug.max_nesting_level', 2000);
-        $parser = new \PhpParser\Parser(new \PhpParser\Lexer());
-        try {
-            $stmts = $parser->parse($src);
-
-            $traverser = new \PhpParser\NodeTraverser();
-            $indexer = new IndexNodeVisitor();
-            $traverser->addVisitor(new \PhpParser\NodeVisitor\NameResolver());
-            $traverser->addVisitor($indexer);
-            $traverser->traverse($stmts);
-            
-            print_r($indexer->index);
-            echo "\n\n\n";
-            //print_r($stmts);
-            exit;
-        } catch (PhpParser\Error $e) {
-            echo 'Parse Error: ', $e->getMessage();
-            exit;
-        }
-	}
-
-}
-
-class IndexNodeVisitor extends \PhpParser\NodeVisitorAbstract
-{
-    
-    public $index;
-    
-    public function __construct() {
-        $this->index = array(
-            'tag' => array(),
-            'provide_class' => array(),
-            'provide_namespace' => array(),
-            'use_class' => array(),
-            'use_namespace' => array(),
-        );
-    }
-    
-    public function enterNode(\PhpParser\Node $node) {
-        // echo get_class($node) . "\n";
-        // if ($node instanceof \PhpParser\Node\Name\FullyQualified) { $this->index['fq'][] = $node->toString(); }
+        $em = $this->getContainer()->get('doctrine.orm.entity_manager');
         
-        // Analyze provide
-        if ($node instanceof \PhpParser\Node\Stmt\Class_) {
-            Utils::array_add($this->index['provide_class'], $node->namespacedName->toString());
-        }
-        if ($node instanceof \PhpParser\Node\Stmt\Namespace_) {
-            Utils::array_add($this->index['provide_namespace'], $node->name->toString());
+        /**
+         * @var Platform
+         */
+        $platform = $this->getContainer()->get('ppint.platform.pypi');
+        
+        $src = file_get_contents('PyPi-index.txt');
+        foreach (explode(PHP_EOL, $src) as $name) {
+            $package = new Package();
+            $package->setName($name);
+            $package->setUrl($name);
+            $package->setPlatform($platform->getPlatformReference());
+            $em->persist($package);
         }
         
-        // Analyze usage
-        if ($node instanceof \PhpParser\Node\Stmt\Use_) {
-            foreach ($node->uses as $use) {
-                Utils::array_add($this->index['use_namespace'], $use->name->toString());
-            }
-        }
-        if ($node instanceof \PhpParser\Node\Expr\New_) {
-            Utils::array_add($this->index['use_class'], $node->class->toString());
-        }
-        if ($node instanceof \PhpParser\Node\Param) {
-            Utils::array_add($this->index['use_class'], $node->type->toString());
-        }
+        
+        $em->flush();
     }
+
 }

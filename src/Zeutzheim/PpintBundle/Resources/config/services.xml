@@ -12,6 +12,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<parameter key="ppint.platform.class">Zeutzheim\PpintBundle\Model\Platform</parameter>
 		<parameter key="ppint.platform.packagist.class">Zeutzheim\PpintBundle\Model\Platform\Packagist</parameter>
 		<parameter key="ppint.platform.hackage.class">Zeutzheim\PpintBundle\Model\Platform\Hackage</parameter>
+		<parameter key="ppint.platform.pypi.class">Zeutzheim\PpintBundle\Model\Platform\PyPi</parameter>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
 		<parameter key="ppint.language_manager.class">Zeutzheim\PpintBundle\Model\LanguageManager</parameter>
@@ -53,6 +54,9 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 			<tag name="ppint.platform" />
 		</service>
 		<service id="ppint.platform.hackage" class="%ppint.platform.hackage.class%" parent="ppint.platform">
+			<tag name="ppint.platform" />
+		</service>
+		<service id="ppint.platform.pypi" class="%ppint.platform.pypi.class%" parent="ppint.platform">
 			<tag name="ppint.platform" />
 		</service>
 

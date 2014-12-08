@@ -99,7 +99,8 @@ class IndexNodeVisitor extends \PhpParser\NodeVisitorAbstract
             Utils::array_add($this->index['provide_class'], $node->namespacedName->toString());
         }
         if ($node instanceof \PhpParser\Node\Stmt\Namespace_) {
-            Utils::array_add($this->index['provide_namespace'], $node->name->toString());
+            if ($node->name !== null)
+                Utils::array_add($this->index['provide_namespace'], $node->name->toString());
         }
         
         // Analyze usage

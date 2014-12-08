@@ -63,7 +63,7 @@ assetic:
         lessphp:
             apply_to: "\.less$"
             # Formatter options: compressed, lessjs, classic
-            formatter: "compressed"
+            formatter: "classic"
             preserve_comments: false
 
 # Doctrine Configuration

@@ -27,10 +27,15 @@ class DefaultController extends ControllerHelperNT {
 			'label' => 'file',
 			'required' => false,
 		));
-		$form->add('namespaces', null, array(
-			'label' => 'namespaces',
-			'required' => false,
-		));
+        $form->add('platform', 'entity', array(
+            'label' => 'platform',
+            'class' => 'ZeutzheimPpintBundle:Platform',
+            'required' => false,
+        ));
+        $form->add('namespaces', null, array(
+            'label' => 'namespaces',
+            'required' => false,
+        ));
 		$form->add('classes', null, array(
 			'label' => 'classes',
 			'required' => false,
@@ -60,8 +65,17 @@ class DefaultController extends ControllerHelperNT {
 					$src = file_get_contents($file->getRealPath());
 					$searchResults = $this->get('ppint.manager')->findPackagesBySource($fn, $src);
 				} else {
-					$searchResults = $this->get('ppint.manager')->findPackages($data['namespaces'], $data['classes'], $data['languages'], $data['tags']);
+					$searchResults = $this->get('ppint.manager')->findPackages($data['platform'], $data['namespaces'], $data['classes'], $data['languages'], $data['tags']);
 				}
+                $maxScore = 0;
+                foreach ($searchResults as &$value) {
+                    $maxScore = max($value->_score, $maxScore);
+                }
+                if ($maxScore > 0) {
+                    foreach ($searchResults as &$value) {
+                        $value->_percentScore = $value->_score / $maxScore;
+                    }
+                }
 			} else {
 				$this->reportAllFormErrors($form);
 			}
@@ -74,7 +88,8 @@ class DefaultController extends ControllerHelperNT {
 		
 		if (isset($searchResults))
 		{
-			$params['searchResults'] = $searchResults;
+            $params['searchResults'] = $searchResults;
+            $params['maxScore'] = $maxScore;
 			$params['lastQuery'] = json_encode($this->get('ppint.manager')->lastQuery, JSON_PRETTY_PRINT);
 		}
 		

@@ -128,17 +128,22 @@ abstract class Platform {
 		if ($this->getManagedEntityCount() > 60)
 			$this->getEntityManager()->clear('ZeutzheimPpintBundle:Version');
 
+        $this->log('Checking package', $package, 200);
+                        
 		// Load data
-		$data = $this->httpGet($this->getPackageDataUrl($package));
-		if (!$data)
+		$data = $this->getPackageData($package);
+		if (!$data) {
+		    $package->setError(true);
+            $this->log('Failed to get package data', $package, Logger::WARNING);
 			return false;
+		}
 		
 		// Get description
-		$package->setDescription($this->getPackageDataDescription($data));
+		if (array_key_exists('description', $data))
+		  $package->setDescription($data['description']);
 
 		// Find versions from data
-		$versions = array_unique($this->getPackageDataVersions($data));
-		foreach ($versions as $versionName) {
+		foreach ($data['versions'] as $versionName) {
 			$versionName = (string) $versionName;
 			// Add version to package
 			$version = $this->getVersion($package, $versionName);
@@ -156,10 +161,10 @@ abstract class Platform {
 			}
 
 			// Check if a master-version was found and fetch the master-version identifiert (hash, date, etc.)
-			if ($version->getName() == $this->getMasterVersion() && $this->getPackageDataMasterVersion($data, $masterVersion)) {
+			if ($version->getName() == $this->getMasterVersion() && array_key_exists('master', $data)) {
 				// Check if the master-version is still up to date
-				if ($package->getMasterVersionTag() != $masterVersion) {
-					$package->setMasterVersionTag($masterVersion);
+				if ($package->getMasterVersionTag() != $data['master']) {
+					$package->setMasterVersionTag($data['master']);
 					if (!$newVersion) {
 						$version->setIndexed(false);
 						$version->setNamespaces(null);
@@ -174,6 +179,8 @@ abstract class Platform {
 		}
 		$package->setCrawled(true);
 
+		$this->log('Package-data updated', $package, Logger::DEBUG);
+		
 		// Flush changes
 		$this->getEntityManager()->flush();
 
@@ -298,13 +305,7 @@ abstract class Platform {
 
 	public abstract function getMasterVersion();
 
-	public abstract function getPackageDataUrl(Package $package);
-	
-	public abstract function getPackageDataDescription($data);
-	
-	public abstract function getPackageDataVersions($data);
-	
-	public abstract function getPackageDataMasterVersion($data, &$masterVersion);
+	public abstract function getPackageData(Package $package);
 	
 	//*******************************************************************
 
@@ -409,7 +410,7 @@ abstract class Platform {
 			if ($obj instanceof PlatformEntity)
 				$msg = str_pad($obj, Platform::PLATFORM_STR_LEN) . ' ' . $msg;
 			elseif ($obj instanceof Package)
-				$msg = str_pad($obj->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj, Platform::PACKAGE_STR_LEN) . ' ' . $msg;
+				$msg = str_pad($obj->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj, Platform::PACKAGE_STR_LEN) . ' ' . str_pad(' ', Platform::VERSION_STR_LEN) . ' ' . $msg;
 			elseif ($obj instanceof Version)
 				$msg = str_pad($obj->getPackage()->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj->getPackage(), Platform::PACKAGE_STR_LEN) . ' ' . str_pad($obj, Platform::VERSION_STR_LEN) . ' ' . $msg;
 			elseif (is_string($obj))

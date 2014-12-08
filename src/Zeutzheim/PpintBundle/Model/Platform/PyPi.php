@@ -14,9 +14,11 @@ use Zeutzheim\PpintBundle\Entity\Platform as PlatformEntity;
 use Zeutzheim\PpintBundle\Entity\Package;
 use Zeutzheim\PpintBundle\Entity\Version;
 
-class Hackage extends Platform {
+class PyPi extends Platform {
 
 	public function doDownloadVersion(Version $version, $path) {
+	    return false;
+        
 		$fn = $version->getPackage()->getUrl() . '-' . $version->getName() . '.tar.gz';
 		$url = 'http://hackage.haskell.org/package/' . $version->getPackage()->getUrl() . '-' . $version->getName() . '/' . $fn;
 
@@ -34,15 +36,15 @@ class Hackage extends Platform {
 	//*******************************************************************
 
 	public function getName() {
-		return 'hackage';
+		return 'pypi';
 	}
 
 	public function getBaseUrl() {
-		return 'https://hackage.haskell.org/package/';
+		return 'https://pypi.python.org/pypi/';
 	}
 
 	public function getCrawlUrl() {
-		return 'https://hackage.haskell.org/packages/recent.rss';
+		return 'https://pypi.python.org/pypi?%3Aaction=rss';
 	}
 
 	public function getMasterVersion() {
@@ -50,27 +52,29 @@ class Hackage extends Platform {
 	}
 
 	public function getPackageRegex() {
-		return '@<link>http://hackage.haskell.org/package/([^<]*)-[\d\.]*</link>@i';
+		return '@<link>http://pypi.python.org/pypi/([^/]+)/[^/<]+</link>@i';
 	}
 
 	public function getPackageData(Package $package) {
-        $src = $this->httpGet($this->getBaseUrl() . $package->getName());
-        if ($src === false) {
+        $json = $this->httpGet($this->getBaseUrl() . $package->getName() . '/json');
+        if ($json === false) {
+            // echo 'Error downloading data'; exit;
             return false;
         }
         
-        $pkgData = array();
-        
-        // Get versions
-        preg_match_all('@href="/package/[^"]*-([\d\.]*\d)@i', $src, $matches);
-        $pkgData['versions'] = array_unique($matches[1]);
-        
-        // Get description
-        preg_match('@id="content"[\s\S]*<div[\s\S]*</div>([\s\S]*)<hr@imx', $src, $matches);
-        if (isset($matches[1])) {
-            $pkgData['description'] = strip_tags($matches[1]);
+        $data = json_decode($json, TRUE);
+        if ($data === null) {
+            // echo 'Error reading data'; exit;
+            return false;
         }
         
+        // Get basic package information
+        $pkgData = array(
+            //'description' => $data['info']['description'],
+            'description' => $data['info']['summary'],
+            'versions' => array_keys($data['releases']),
+        );
+
         return $pkgData;
 	}
 

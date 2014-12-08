@@ -25,7 +25,7 @@ use FOS\ElasticaBundle\Finder\TransformedFinder;
 use Elastica\Query;
 use Elastica\Query as ESQ;
 use Elastica\Filter as ESF;
-use Elastica\Query\Terms;
+use Elastica\Query\Term;
 use Elastica\Query\Bool;
 use Elastica\Query\FunctionScore;
 
@@ -56,7 +56,7 @@ class PackagePlatformIntegrationManager {
 	 */
 	private $finder;
 	
-	private $transformedFinderAccessHelper;
+	private $finderHelper;
 	
 	public $lastQuery;
 
@@ -66,7 +66,7 @@ class PackagePlatformIntegrationManager {
 		$this->platformManager = $platformManager;
 		$this->languageManager = $languageManager;
 		$this->finder = $finder;
-		$this->transformedFinderAccessHelper = new TransformedFinderAccessHelper();
+		$this->finderHelper = new TransformedFinderHelper($this->finder);
 	}
 
 	//*******************************************************************
@@ -86,7 +86,8 @@ class PackagePlatformIntegrationManager {
 		$this->log('started crawling packages', null, Logger::NOTICE);
 
 		// Load package list
-		$packages = $this->selectCrawlPackages();
+		$packageIds = $this->selectCrawlPackages();
+        $packageRepository = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package');
 
 		// Get start time and set time limit
 		if ($maxTime <= 0)
@@ -95,13 +96,19 @@ class PackagePlatformIntegrationManager {
 		set_time_limit(60 * 5 + $maxTime);
 
 		// Iterate over all packages that need to be scanned
-		foreach ($packages as $package) {
+        $cnt = 0;
+		foreach ($packageIds as $packageId) {
 			if (time() - $startTime > $maxTime) {
 				$this->log('maximum execution time reached', null, Logger::NOTICE);
 				break;
 			}
+            $package = $packageRepository->find($packageId);
 			$this->getPlatformManager()->getPlatform($package->getPlatform()->getName())->loadPackageData($package);
+            if ($cnt++ % 20) {
+                $this->getEntityManager()->clear();
+            }
 		}
+        $this->getEntityManager()->flush();
 
 		$this->log('finished crawling packages', null, Logger::NOTICE);
 	}
@@ -153,23 +160,29 @@ class PackagePlatformIntegrationManager {
 		}
 		$index = PackagePlatformIntegrationManager::collapseIndex($index);
 		
-		return $this->findPackages($index['namespace'], $index['class'], $index['language']);
+		return $this->findPackages(null, $index['namespace'], $index['class'], $index['language']);
 	}
 
 	//*******************************************************************
 	
-	public function findPackages($namespaces = null, $classes = null, $languages = null, $codetags = null) {
+	public function findPackages($platform = null, $namespaces = null, $classes = null, $languages = null, $codetags = null) {
 		$query = new Bool();
 		
 		if (!$namespaces && !$classes && !$languages && !$codetags)
 			return array();
-		
-		if ($namespaces) {
-			$match = new ESQ\Match();
-			$match->setFieldQuery('namespaces', $namespaces);
-			$match->setFieldParam('namespaces', 'analyzer', 'identifier');
-			$query->addShould($match);
-		}
+        
+        if ($platform) {
+            $term = new Term();
+            $term->setTerm('package.platform.id', is_object($platform) ? $platform->getId() : $platform);
+            $query->addMust($term);
+        }
+        
+        if ($namespaces) {
+            $match = new ESQ\Match();
+            $match->setFieldQuery('namespaces', $namespaces);
+            $match->setFieldParam('namespaces', 'analyzer', 'identifier');
+            $query->addShould($match);
+        }
 		
 		if ($classes) {
 			$match = new ESQ\Match();
@@ -186,7 +199,11 @@ class PackagePlatformIntegrationManager {
 		}
 		
 		if ($codetags) {
-			$terms = explode(' ', strtolower($codetags));
+		    preg_match_all(Utils::CAMEL_CASE_PATTERN, $codetags, $matches);
+            $terms = $matches[0];
+            foreach ($terms as &$value)
+                $value = strtolower($value);
+            // $terms = explode(' ', strtolower($codetags));
 			
 			$termsQuery = new ESF\Terms();
 			$termsQuery->setTerms('codeTags.name', $terms);
@@ -230,24 +247,7 @@ EOM;
         $query->setSize(25);
 		$this->lastQuery = $query->toArray();
 		
-		return $this->findWithScore($query);
-		// return $this->finder->find($query);
-	}
-
-	public function findWithScore($query, $limit = null) {
-		$queryObject = Query::create($query);
-        if (null !== $limit) {
-            $queryObject->setSize($limit);
-        }
-		$this->lastQuery = $queryObject->toArray();
-        
-		$queryResults = $this->transformedFinderAccessHelper->getSearchable($this->finder)->search($queryObject)->getResults();
-        $results = $this->transformedFinderAccessHelper->getTransformer($this->finder)->transform($queryResults);
-		foreach ($results as $key => $entity) {
-			$hit = $queryResults[$key]->getHit();
-			$entity->_score = $hit['_score'];
-		}
-        return $results;
+		return $this->finderHelper->findWithScore($query);
 	}
 
 	//*******************************************************************
@@ -288,7 +288,7 @@ EOM;
 
 		// Load package list
 		$packages = $this->selectIndexPackages($indexPlatform ? $indexPlatform->getPlatformEntity() : null);
-		$packageRepository = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package');
+        $packageRepository = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package');
 
 		// Get start time and set time limit
 		$startTime = time();
@@ -318,8 +318,7 @@ EOM;
 					'(other error)'), $version, Logger::NOTICE);
 			}
 
-			if ($cnt++ > 20) {
-				$cnt = 0;
+			if ($cnt++ % 20 == 0) {
 				$this->getEntityManager()->flush();
 				$this->getEntityManager()->clear();
 				//$this->getEntityManager()->clear('ZeutzheimPpintBundle:Package');
@@ -401,7 +400,7 @@ EOM;
 			if ($obj instanceof PlatformEntity)
 				$msg = str_pad($obj, Platform::PLATFORM_STR_LEN) . ' ' . $msg;
 			elseif ($obj instanceof Package)
-				$msg = str_pad($obj->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj, Platform::PACKAGE_STR_LEN) . ' ' . $msg;
+				$msg = str_pad($obj->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj, Platform::PACKAGE_STR_LEN) . ' ' . str_pad(' ', Platform::VERSION_STR_LEN) . ' ' . $msg;
 			elseif ($obj instanceof Version)
 				$msg = str_pad($obj->getPackage()->getPlatform(), Platform::PLATFORM_STR_LEN) . ' ' . str_pad($obj->getPackage(), Platform::PACKAGE_STR_LEN) . ' ' . str_pad($obj, Platform::VERSION_STR_LEN) . ' ' . $msg;
 			elseif (is_string($obj))
@@ -443,11 +442,11 @@ EOM;
 	//*******************************************************************
 	
 	/**
-	 * @return array (Package)
+	 * @return array (Package-id)
 	 */
 	private function selectCrawlPackages() {
 		$qb = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package')->createQueryBuilder('pkg');
-		$qb->select('pkg')->where('pkg.crawled = FALSE')->orderBy('pkg.addedDate');
+		$qb->select('pkg.id')->where('pkg.crawled = FALSE')->andWhere('pkg.error = FALSE')->orderBy('pkg.addedDate');
 		return $qb->getQuery()->getResult();
 	}
 
@@ -531,14 +530,37 @@ EOM;
 	
 }
 
-class TransformedFinderAccessHelper extends TransformedFinder {
-    public function __construct()
+class TransformedFinderHelper extends TransformedFinder {
+        
+    protected $finder;
+    
+    public function __construct($finder)
     {
+        $this->finder = $finder;
     }
+	
 	public function getSearchable($instance) {
 		return $instance->searchable;
 	}
+	
 	public function getTransformer($instance) {
 		return $instance->transformer;
 	}
+    
+    public function findWithScore($query, $limit = null) {
+        $queryObject = Query::create($query);
+        if (null !== $limit) {
+            $queryObject->setSize($limit);
+        }
+        $this->lastQuery = $queryObject->toArray();
+        
+        $queryResults = $this->getSearchable($this->finder)->search($queryObject)->getResults();
+        $results = $this->getTransformer($this->finder)->transform($queryResults);
+        foreach ($results as $key => $entity) {
+            $hit = $queryResults[$key]->getHit();
+            $entity->_score = $hit['_score'];
+        }
+        return $results;
+    }
+    
 }

@@ -44,6 +44,7 @@ fos_elastica:
                                 id: ~ #{ boost: 5 }
                                 name: ~ #{ boost: 5 }
                                 description: ~ #{ boost: 5 }
+                        package.platform.id: ~
                         codeTags:
                             type: "object"
                             store: "yes"
