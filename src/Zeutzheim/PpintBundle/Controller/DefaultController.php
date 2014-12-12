@@ -22,20 +22,22 @@ class DefaultController extends ControllerHelperNT {
 	 */
 	public function indexAction(Request $request) {
 
-		$form = $this->get('form.factory')->createBuilder('form');
+		$form = $this->get('form.factory')->createBuilder('form', null, array(
+			'csrf_protection' => false,
+		));
 		$form->add('file', 'file', array(
 			'label' => 'file',
 			'required' => false,
 		));
-        $form->add('platform', 'entity', array(
-            'label' => 'platform',
-            'class' => 'ZeutzheimPpintBundle:Platform',
-            'required' => false,
-        ));
-        $form->add('namespaces', null, array(
-            'label' => 'namespaces',
-            'required' => false,
-        ));
+		$form->add('platform', 'entity', array(
+			'label' => 'platform',
+			'class' => 'ZeutzheimPpintBundle:Platform',
+			'required' => false,
+		));
+		$form->add('namespaces', null, array(
+			'label' => 'namespaces',
+			'required' => false,
+		));
 		$form->add('classes', null, array(
 			'label' => 'classes',
 			'required' => false,
@@ -67,15 +69,15 @@ class DefaultController extends ControllerHelperNT {
 				} else {
 					$searchResults = $this->get('ppint.manager')->findPackages($data['platform'], $data['namespaces'], $data['classes'], $data['languages'], $data['tags']);
 				}
-                $maxScore = 0;
-                foreach ($searchResults as &$value) {
-                    $maxScore = max($value->_score, $maxScore);
-                }
-                if ($maxScore > 0) {
-                    foreach ($searchResults as &$value) {
-                        $value->_percentScore = $value->_score / $maxScore;
-                    }
-                }
+				$maxScore = 11;
+				foreach ($searchResults as &$value) {
+					$maxScore = max($value->_score, $maxScore);
+				}
+				if ($maxScore > 0) {
+					foreach ($searchResults as &$value) {
+						$value->_percentScore = $value->_score / $maxScore;
+					}
+				}
 			} else {
 				$this->reportAllFormErrors($form);
 			}
@@ -88,8 +90,8 @@ class DefaultController extends ControllerHelperNT {
 		
 		if (isset($searchResults))
 		{
-            $params['searchResults'] = $searchResults;
-            $params['maxScore'] = $maxScore;
+			$params['searchResults'] = $searchResults;
+			$params['maxScore'] = $maxScore;
 			$params['lastQuery'] = json_encode($this->get('ppint.manager')->lastQuery, JSON_PRETTY_PRINT);
 		}
 		
@@ -104,8 +106,8 @@ class DefaultController extends ControllerHelperNT {
 		$platformData = array();
 		foreach ($this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Platform')->findAll() as $platform) {
 			$count = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->getQuery()->getSingleScalarResult();
-			$indexedCount = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.indexed = true')->getQuery()->getSingleScalarResult();
-			$errorCount = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.error = true')->getQuery()->getSingleScalarResult();
+			$indexedCount = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.version IS NOT NULL')->andWhere('pkg.error IS NULL')->getQuery()->getSingleScalarResult();
+			$errorCount = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.error IS NOT NULL')->getQuery()->getSingleScalarResult();
 			$lastAdded = $packageRepo->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.addedDate', 'DESC')->setMaxResults(12)->getQuery()->getResult();
 			$lastIndexed = $packageRepo->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(12)->getQuery()->getResult();
 

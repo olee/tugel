@@ -23,7 +23,6 @@ class CrawlCommand extends ContainerAwareCommand {
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		$ppint = $this->getContainer()->get('ppint.manager');
 		$ppint->crawlPlatforms();
-		$ppint->loadPackagesData();
 	}
 
 }

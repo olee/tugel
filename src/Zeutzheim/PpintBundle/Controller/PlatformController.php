@@ -11,7 +11,7 @@ use Doctrine\ORM\EntityManager;
 
 use ssko\UtilityBundle\Core\ControllerHelperNT;
 
-use Zeutzheim\PpintBundle\Model\Platform;
+use Zeutzheim\PpintBundle\Model\AbstractPlatform;
 
 /**
  * @Route("/")
@@ -19,7 +19,7 @@ use Zeutzheim\PpintBundle\Model\Platform;
 class PlatformController extends ControllerHelperNT {
 
 	/**
-	 * @return Zeutzheim\PpintBundle\Model\Platform
+	 * @return Zeutzheim\PpintBundle\Model\AbstractPlatform
 	 */
 	public function getPlatform() {
 		return $this->get('ppint.platform');
@@ -72,7 +72,6 @@ class PlatformController extends ControllerHelperNT {
 					if (!$package) {
 						$package = new \Zeutzheim\PpintBundle\Entity\Package();
 						$package->setName($packageUri);
-						$package->setUrl($packageUri);
 						$package->setPlatform($platform);
 						$this->getEntityManager()->persist($package);
 	

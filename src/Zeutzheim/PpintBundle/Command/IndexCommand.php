@@ -19,11 +19,10 @@ class IndexCommand extends ContainerAwareCommand {
 		$this->setDefinition(array(
 			new InputArgument('platform', InputArgument::OPTIONAL, 'The platform the package is part of'),
 			new InputArgument('package', InputArgument::OPTIONAL, 'The package which should be scanned'),
-			new InputArgument('version', InputArgument::OPTIONAL, 'The version which should be scanned'),
 		));
 		$this->addOption('maxtime', 't', InputOption::VALUE_OPTIONAL, 'The maximum execution time', 60);
-		$this->addOption('cachesize', 'c', InputOption::VALUE_NONE, 'Print the cachesize on start');
-		$this->addOption('redownloadmaster', 'r', InputOption::VALUE_NONE, 'Redownload master-versions');
+		$this->addOption('cachesize', null, InputOption::VALUE_NONE, 'Print the cachesize on start');
+		$this->addOption('quick', null, InputOption::VALUE_NONE, 'Quick indexing without checking for new versions');
 		$this->setDescription("Analyze one or more packages and add them to the index.\n
 The command can index all packages, all packages of a platform or a single package, depending on the arguments specified.\n
 If the version is not specified, the command tries to pick the newest version.");
@@ -38,10 +37,9 @@ If the version is not specified, the command tries to pick the newest version.")
 		if ($ppint->index(
 			$input->getArgument('platform'), 
 			$input->getArgument('package'), 
-			$input->getArgument('version'), 
 			$input->getOption('maxtime'), 
 			$input->getOption('cachesize'), 
-			$input->getOption('redownloadmaster')))
+			$input->getOption('quick')))
 		{
 			$this->getContainer()->get('ppint.logger')->info('> Successfully indexd packages.');
 		} else {

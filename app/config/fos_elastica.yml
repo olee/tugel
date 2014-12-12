@@ -34,30 +34,42 @@ fos_elastica:
 #                        model: Zeutzheim\PpintBundle\Entity\Package
 #                        provider: ~
 #                        listener: ~
-                version:
+                package:
                     indexable_callback: isIndexed
                     mappings:
-                        name: ~
-                        package:
-                            type: "object"
-                            properties:
-                                id: ~ #{ boost: 5 }
-                                name: ~ #{ boost: 5 }
-                                description: ~ #{ boost: 5 }
-                        package.platform.id: ~
+                        id:
+                          type: "integer"
+                        platform.id:
+                          type: "integer"
+                        name:
+                          type: "string"
+                        version:
+                          type: "string"
+                        description:
+                          type: "string"
+                        codeTagsMaximum:
+                          type: "integer"
                         codeTags:
                             type: "object"
                             store: "yes"
                             properties:
-                                name: ~ #{ boost: 5 }
+                                name:
+                                  type: "string"
                                 count:
-                                  type: "integer"
-                        languages: { analyzer: whitespace }
-                        namespaces: { analyzer: identifier }
-                        classes: { boost: 1, analyzer: identifier }
+                                  type: "float"
+                        languages:
+                          type: "string"
+                          analyzer: "whitespace"
+                        namespaces:
+                          type: "string"
+                          analyzer: "identifier"
+                        classes:
+                          type: "string"
+                          boost: 1
+                          analyzer: "identifier"
                     persistence:
                         driver: orm
-                        model: Zeutzheim\PpintBundle\Entity\Version
+                        model: Zeutzheim\PpintBundle\Entity\Package
                         provider: ~
                         listener: ~
                         finder: ~

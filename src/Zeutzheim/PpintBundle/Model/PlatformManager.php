@@ -2,7 +2,7 @@
 
 namespace Zeutzheim\PpintBundle\Model;
 
-use Zeutzheim\PpintBundle\Model\Platform;
+use Zeutzheim\PpintBundle\Model\AbstractPlatform;
 
 class PlatformManager {
 
@@ -13,7 +13,7 @@ class PlatformManager {
 
 	private $platforms = array();
 
-	public function addPlatform(Platform $platform) {
+	public function addPlatform(AbstractPlatform $platform) {
 		$this->platforms[$platform->getName()] = $platform;
 	}
 
@@ -25,7 +25,7 @@ class PlatformManager {
 	}
 	
 	/**
-	 * @return Platform
+	 * @return AbstractPlatform
 	 */
 	public function getPlatform($name) {
 		return $this->platforms[$name];

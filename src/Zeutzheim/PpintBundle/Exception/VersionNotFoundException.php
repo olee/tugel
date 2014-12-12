@@ -6,8 +6,6 @@ use Zeutzheim\PpintBundle\Entity\Version;
 
 /**
  * Thrown when a version was not found.
- *
- * @author Björn Zeutzheim <bjoern@zeutzheim-boppard.de>
  */
 class VersionNotFoundException extends \RuntimeException {
 	

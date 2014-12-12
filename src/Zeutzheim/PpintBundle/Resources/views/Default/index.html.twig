@@ -25,13 +25,13 @@
 					</tr>
 				</thead>
 				<tbody>
-					{% for id,version in searchResults %}
+					{% for id,package in searchResults %}
 					<tr>
-						<td>{{ version.id }}</td>
-						<td><a target="_blank" href="{{ version.package.platform.baseUrl ~ version.package.url }}">{{ version.package.name }}</a></td>
-						<td>{{ version.name }}</td>
-						<td>{{ version.package.platform.name }}</td>
-						<td class="{{ version._percentScore > 0.66 ? 'score_green' : (version._percentScore > 0.5 ? 'score_orange' : 'score_red') }}">{{ version._score|number_format(3) }}</td>
+						<td>{{ package.id }}</td>
+						<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
+						<td>{{ package.version }}</td>
+						<td>{{ package.platform.name }}</td>
+						<td class="{{ package._percentScore > 0.66 ? 'score_green' : (package._percentScore > 0.5 ? 'score_orange' : 'score_red') }}">{{ package._score|number_format(3) }}</td>
 					</tr>
 					{% endfor %}
 				</tbody>
@@ -62,9 +62,9 @@
 				{% for package in platform.last_added %}
 				<tr>
 					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.url }}">{{ package.name }}</a></td>
+					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
 					<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
-					<td>{{ package.versions|length > 0 ? (package.versions|first).name : 'N/A' }}</td>
+					<td>{{ package.version }}</td>
 					<td class="desc">{{ package.description|raw }}</td>
 				</tr>
 				{% endfor %}
@@ -85,9 +85,9 @@
 				{% for package in platform.last_indexed %}
 				<tr>
 					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.url }}">{{ package.name }}</a></td>
+					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
 					<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
-					<td>{{ package.versions|length > 0 ? (package.versions|first).name : 'N/A' }}</td>
+					<td>{{ package.version }}</td>
 					<td class="desc">{{ package.description|raw }}</td>
 				</tr>
 				{% endfor %}

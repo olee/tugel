@@ -21,7 +21,7 @@ class TestCommand extends ContainerAwareCommand {
 		parent::configure();
 
 		$this->setName('ppint:test');
-        /*
+		/*
 		$this->setDefinition(array(
 			new InputArgument('platform', InputArgument::OPTIONAL, 'The platform the package is part of'),
 			new InputArgument('package', InputArgument::OPTIONAL, 'The package which should be scanned'),
@@ -33,31 +33,30 @@ class TestCommand extends ContainerAwareCommand {
 		$this->setDescription("Analyze one or more packages and add them to the index.\n
 The command can index all packages, all packages of a platform or a single package, depending on the arguments specified.\n
 If the version is not specified, the command tries to pick the newest version.");
-        */
+		*/
 	}
-    
+	
 	/**
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-        $em = $this->getContainer()->get('doctrine.orm.entity_manager');
-        
-        /**
-         * @var Platform
-         */
-        $platform = $this->getContainer()->get('ppint.platform.pypi');
-        
-        $src = file_get_contents('PyPi-index.txt');
-        foreach (explode(PHP_EOL, $src) as $name) {
-            $package = new Package();
-            $package->setName($name);
-            $package->setUrl($name);
-            $package->setPlatform($platform->getPlatformReference());
-            $em->persist($package);
-        }
-        
-        
-        $em->flush();
-    }
+		$em = $this->getContainer()->get('doctrine.orm.entity_manager');
+		
+		/**
+		 * @var Platform
+		 */
+		$platform = $this->getContainer()->get('ppint.platform.pypi');
+		
+		$src = file_get_contents('PyPi-index.txt');
+		foreach (explode(PHP_EOL, $src) as $name) {
+			$package = new Package();
+			$package->setName($name);
+			$package->setPlatform($platform->getPlatformReference());
+			$em->persist($package);
+		}
+		
+		
+		$em->flush();
+	}
 
 }

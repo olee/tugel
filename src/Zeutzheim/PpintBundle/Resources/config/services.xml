@@ -5,11 +5,11 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
 	<parameters>
-		<parameter key="ppint.manager.class">Zeutzheim\PpintBundle\Model\PackagePlatformIntegrationManager</parameter>
+		<parameter key="ppint.manager.class">Zeutzheim\PpintBundle\Model\PackageManager</parameter>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
 		<parameter key="ppint.platform_manager.class">Zeutzheim\PpintBundle\Model\PlatformManager</parameter>
-		<parameter key="ppint.platform.class">Zeutzheim\PpintBundle\Model\Platform</parameter>
+		<parameter key="ppint.platform.class">Zeutzheim\PpintBundle\Model\AbstractPlatform</parameter>
 		<parameter key="ppint.platform.packagist.class">Zeutzheim\PpintBundle\Model\Platform\Packagist</parameter>
 		<parameter key="ppint.platform.hackage.class">Zeutzheim\PpintBundle\Model\Platform\Hackage</parameter>
 		<parameter key="ppint.platform.pypi.class">Zeutzheim\PpintBundle\Model\Platform\PyPi</parameter>
@@ -20,13 +20,14 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<parameter key="ppint.language.php.class">Zeutzheim\PpintBundle\Model\Language\PHP</parameter>
 		<parameter key="ppint.language.java.class">Zeutzheim\PpintBundle\Model\Language\Java</parameter>
 		<parameter key="ppint.language.haskell.class">Zeutzheim\PpintBundle\Model\Language\Haskell</parameter>
+		<parameter key="ppint.language.python.class">Zeutzheim\PpintBundle\Model\Language\Python</parameter>
 	</parameters>
 	<services>
 		
-	    <service id="monolog.logger.ppint" parent="monolog.logger_prototype">
-	        <argument index="0">ppint</argument>
-	    </service>
-	    <service id="ppint.logger" alias="monolog.logger.ppint" />
+		<service id="monolog.logger.ppint" parent="monolog.logger_prototype">
+			<argument index="0">ppint</argument>
+		</service>
+		<service id="ppint.logger" alias="monolog.logger.ppint" />
 
 		<service id="monolog.formatter.simple_line" class="Monolog\Formatter\LineFormatter">
 			<argument>[%%datetime%%] %%level_name%%: %%message%%&#xA;</argument>
@@ -38,7 +39,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 			<argument type="service" id="ppint.logger" />
 			<argument type="service" id="ppint.platform_manager" />
 			<argument type="service" id="ppint.language_manager" />
-			<argument type="service" id="fos_elastica.finder.search.version" />
+			<argument type="service" id="fos_elastica.finder.search.package" />
 		</service>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
@@ -74,6 +75,9 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 			<tag name="ppint.language" />
 		</service>
 		<service id="ppint.language.haskell" class="%ppint.language.haskell.class%" parent="ppint.language">
+			<tag name="ppint.language" />
+		</service>
+		<service id="ppint.language.python" class="%ppint.language.python.class%" parent="ppint.language">
 			<tag name="ppint.language" />
 		</service>
 		<!-- - - - - - - - - - - - - - - - - - - - - -->

@@ -4,31 +4,27 @@ namespace Zeutzheim\PpintBundle\Model\Platform;
 
 use Doctrine\ORM\EntityManager;
 
-use Zeutzheim\PpintBundle\Exception\PackageNotFoundException;
-use Zeutzheim\PpintBundle\Exception\VersionNotFoundException;
 use Zeutzheim\PpintBundle\Exception\DownloadErrorException;
 
-use Zeutzheim\PpintBundle\Model\Platform;
+use Zeutzheim\PpintBundle\Model\AbstractPlatform;
 
-use Zeutzheim\PpintBundle\Entity\Platform as PlatformEntity;
+use Zeutzheim\PpintBundle\Entity\Platform;
 use Zeutzheim\PpintBundle\Entity\Package;
-use Zeutzheim\PpintBundle\Entity\Version;
 
-class Hackage extends Platform {
+class Hackage extends AbstractPlatform {
 
-	public function doDownloadVersion(Version $version, $path) {
-		$fn = $version->getPackage()->getUrl() . '-' . $version->getName() . '.tar.gz';
-		$url = 'http://hackage.haskell.org/package/' . $version->getPackage()->getUrl() . '-' . $version->getName() . '/' . $fn;
+	public function doDownload(Package $package, $path, $version) {
+		$fn = $package->getName() . '-' . $version . '.tar.gz';
+		$url = 'http://hackage.haskell.org/package/' . $package->getName() . '-' . $version . '/' . $fn;
 
 		if (!$this->downloadFile($url, $path . $fn))
-			throw new DownloadErrorException($version);
+			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 		
 		// Extract files
-		exec('tar -zxf ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && rm ' . escapeshellarg($path . $fn), $output, $success);
+		$cmd = 'tar -xzof ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && chmod -Rf 775 ' . escapeshellarg($path) . ' && rm ' . escapeshellarg($path . $fn);
+		exec($cmd, $output, $success);
 		if ($success !== 0)
-			throw new DownloadErrorException($version);
-		
-		return true;
+			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 	}
 
 	//*******************************************************************
@@ -54,24 +50,24 @@ class Hackage extends Platform {
 	}
 
 	public function getPackageData(Package $package) {
-        $src = $this->httpGet($this->getBaseUrl() . $package->getName());
-        if ($src === false) {
-            return false;
-        }
-        
-        $pkgData = array();
-        
-        // Get versions
-        preg_match_all('@href="/package/[^"]*-([\d\.]*\d)@i', $src, $matches);
-        $pkgData['versions'] = array_unique($matches[1]);
-        
-        // Get description
-        preg_match('@id="content"[\s\S]*<div[\s\S]*</div>([\s\S]*)<hr@imx', $src, $matches);
-        if (isset($matches[1])) {
-            $pkgData['description'] = strip_tags($matches[1]);
-        }
-        
-        return $pkgData;
+		$src = $this->httpGet($this->getBaseUrl() . $package->getName());
+		if ($src === false) {
+			return false;
+		}
+		
+		$package->data = array();
+		
+		// Get versions
+		preg_match_all('@href="/package/[^"]*-([\d\.]*\d)@i', $src, $matches);
+		$package->data['version'] = end($matches[1]);
+		
+		// Get description
+		preg_match('@id="content"[\s\S]*<div[\s\S]*</div>([\s\S]*)<hr@imx', $src, $matches);
+		if (isset($matches[1])) {
+			$package->data['description'] = strip_tags($matches[1]);
+		}
+		
+		return true;
 	}
 
 }

@@ -2,25 +2,23 @@
 
 namespace Zeutzheim\PpintBundle\Exception;
 
-use Zeutzheim\PpintBundle\Entity\Version;
+use Zeutzheim\PpintBundle\Entity\Package;
 
 /**
- * Thrown when a version could not be downloaded.
- *
- * @author Björn Zeutzheim <bjoern@zeutzheim-boppard.de>
+ * Thrown when a package could not be downloaded.
  */
 class DownloadErrorException extends \RuntimeException {
 	
 	/**
 	 * Constructor.
 	 *
-	 * @param string $version The version that could not be downloaded
+	 * @param string $package The package that could not be downloaded
 	 */
-	public function __construct($version) {
-		if ($version instanceof Version) {
-			parent::__construct(sprintf('The version %s from %s/%s could not be downloaded.', $version, $version->getPackage()->getPlatform(), $version->getPackage()));
+	public function __construct($package) {
+		if ($package instanceof Package) {
+			parent::__construct(sprintf('The package %s:%s could not be downloaded.', $package->getPlatform(), $package));
 		} else {
-			parent::__construct(sprintf('The version %s could not be downloaded.', $version));
+			parent::__construct(sprintf('The package %s could not be downloaded.', $package));
 		}
 	}
 
