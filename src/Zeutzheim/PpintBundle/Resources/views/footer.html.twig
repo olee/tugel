@@ -1,3 +1,4 @@
+{#
 <style>
 	.footer a {
 		color: #BBB;
@@ -8,11 +9,11 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-sm-6">
-				<p><a href="{#{ path('contact') }#}">Kontakt</a></p>
+				<p><a href="{{ path('contact') }}">Kontakt</a></p>
 				<p><a href="{{ path('about') }}">Über uns</a></p>
 			</div>
 			<div class="col-sm-6">
-				<p><a href="{#{ path('legal') }#}">Impressum</a></p>
+				<p><a href="{{ path('legal') }}">Impressum</a></p>
 				<!--
 				<p><a href="http://4teachers.de" target="_blank">4teachers</a></p>
 				<p><a href="http://lehrerselbstverlag.de" target="_blank">Lehrerselbstverlag</a></p>
@@ -24,3 +25,4 @@
 		</div>
 	</div>
 </div>
+#}

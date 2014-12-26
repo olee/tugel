@@ -1,10 +1,13 @@
 {% extends "@ZeutzheimPpint/layout.html.twig" %}
 
-{% block content %}
+{% block html_attr 'class="cover"' %}
+
+{% block body %}
 <div class="cover-wrapper">
   <div class="cover-wrapper-inner">
-<!-- COVER CONTENT -->
-{% block inner_content '' %}
+
+{% block content '' %}
+
   </div>
 </div>
 {% endblock %}

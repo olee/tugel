@@ -20,7 +20,7 @@ class IndexCommand extends ContainerAwareCommand {
 			new InputArgument('platform', InputArgument::OPTIONAL, 'The platform the package is part of'),
 			new InputArgument('package', InputArgument::OPTIONAL, 'The package which should be scanned'),
 		));
-		$this->addOption('maxtime', 't', InputOption::VALUE_OPTIONAL, 'The maximum execution time', 60);
+		$this->addOption('maxtime', 't', InputOption::VALUE_OPTIONAL, 'The maximum execution time', 60 * 10);
 		$this->addOption('cachesize', null, InputOption::VALUE_NONE, 'Print the cachesize on start');
 		$this->addOption('quick', null, InputOption::VALUE_NONE, 'Quick indexing without checking for new versions');
 		$this->setDescription("Analyze one or more packages and add them to the index.\n
@@ -33,7 +33,7 @@ If the version is not specified, the command tries to pick the newest version.")
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		//echo "Result = " . $this->httpGet('https://api.github.com/repos/geissler/converter' . '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7') . "\n"; exit;
-		$ppint = $this->getContainer()->get('ppint.manager');
+		$ppint = $this->getContainer()->get('ppint.package_manager');
 		if ($ppint->index(
 			$input->getArgument('platform'), 
 			$input->getArgument('package'), 

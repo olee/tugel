@@ -25,7 +25,7 @@ class FindCommand extends ContainerAwareCommand {
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-		$ppint = $this->getContainer()->get('ppint.manager');
+		$ppint = $this->getContainer()->get('ppint.package_manager');
 		$ppint->findPackagesBySource($input->getArgument('filename'));
 	}
 

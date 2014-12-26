@@ -248,7 +248,7 @@
 
 {% block button_widget %}
 	{% if attr.class is defined %}
-		{% set attr = attr|merge({class:'btn btn-primary btn-row ' ~ attr.class}) %}
+		{% set attr = attr|merge({class:'btn btn-primary ' ~ attr.class}) %}
 	{% else %}
 		{% set attr = attr|merge({class:'btn btn-primary btn-row'}) %}
 	{% endif %}
@@ -258,7 +258,10 @@
 			onclick: 'var i=jQuery(this);i.button("loading");var n=window.setTimeout(function(){var t=i.html();i.html("Error"),window.setTimeout(function(){i.html(t),i.button("reset")},3e3)},10);jQuery(window).submit(function(){clearTimeout(n)});',
 		}) %}
 	{% endif %}
-	{{ parent() }}
+    {% if label is empty -%}
+        {% set label = name|humanize %}
+    {%- endif -%}
+    <button type="{{ type|default('button') }}" {{ block('button_attributes') }}>{{ label|trans({}, translation_domain) }}</button>
 {% endblock %}
 
 {# ######################################################### #}

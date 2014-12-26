@@ -16,34 +16,33 @@ use Zeutzheim\PpintBundle\Entity\Package;
 class Packagist extends AbstractPlatform {
 
 	public function doDownload(Package $package, $path, $version) {
-		$json = $this->httpGet($this->getBaseUrl() . $package->getName() . '.json');
-		$data = json_decode($json, true);
-		//print_r($data['package']['versions'][$version]);
-
-		if (!isset($data['package']['versions'][$version]))
-			return AbstractPlatform::ERR_VERSION_NOT_FOUND;
-
-		$url = $data['package']['versions'][$version]['source']['url'];
-
-		if (preg_match('@github\\.com/([^\.]*)@', $url, $matches)) {
-			$this->getLogger()->debug('> Checking github url at ' . 'https://api.github.com/repos/' . $matches[1]);
-			$result = $this->httpGet('https://api.github.com/repos/' . $matches[1] . '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7');
-			if (!$result)
+		if (isset($package->data['source'])) {
+			$url = $package->data['source'];
+			if (strpos($url, 'github.com')) {
+				$url .= '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7';
+			}
+			if (!$this->checkRepository($url))
 				return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
-		}
-		if (preg_match('@bitbucket\\.org/([^\.]*)@', $url, $matches)) {
-			$this->getLogger()->debug('> Checking bitbucket url at ' . 'https://api.bitbucket.org/1.0/repositories/' . $matches[1]);
-			$result = $this->httpGet('https://api.bitbucket.org/1.0/repositories/' . $matches[1]);
-			if (!$result)
+			
+			$fn = 'source.zip';
+			if (!$this->downloadFile($url, $path . $fn))
+				return AbstractPlatform::ERR_DOWNLOAD_ERROR;
+			if (!$this->extractZip($path, $fn))
+				return AbstractPlatform::ERR_DOWNLOAD_ERROR;
+			@unlink($path . $fn);
+			
+		} else if (isset($package->data['git'])) {
+			$url = $package->data['git'];
+			if (!$this->checkRepository($url))
 				return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
-		}
-
-		$this->getLogger()->debug('> checking out git repository ' . $url);
-
-		exec('git clone --no-checkout ' . escapeshellarg($url) . ' ' . escapeshellarg($path) . ' && cd ' . escapeshellarg($path) . 
-			' && git reset -q --hard ' . $data['package']['versions'][$version]['source']['reference'], $output, $success);
-		if ($success !== 0)
-			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
+	
+			$this->getLogger()->debug('> checking out git repository ' . $url);
+			exec('git clone --no-checkout ' . escapeshellarg($url) . ' ' . escapeshellarg($path) . ' && cd ' . escapeshellarg($path) . 
+				' && git reset -q --hard ' . $package->data['git-reference'], $output, $success);
+			if ($success !== 0)
+				return AbstractPlatform::ERR_DOWNLOAD_ERROR;
+		} else 
+			return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
 	}
 
 	//*******************************************************************
@@ -101,8 +100,11 @@ class Packagist extends AbstractPlatform {
 		
 		if ($lastestVersion) {
 			// Get master version reference
-			$master = $data['package']['versions'][$lastestVersion];
-			$package->data['version-ref'] = array_key_exists('source', $master) ? $master['source']['reference'] : $master['dist']['reference'];
+			$versionData = $data['package']['versions'][$lastestVersion];
+			$package->data['version-ref'] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : $versionData['dist']['reference'];
+			$package->data['source'] = array_key_exists('dist', $versionData) ? $versionData['dist']['url'] : null;
+			$package->data['git'] = array_key_exists('source', $versionData) ? $versionData['source']['url'] : null;
+			$package->data['git-reference'] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : null;
 		}
 			
 		return true;

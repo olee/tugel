@@ -28,7 +28,7 @@ class DownloadCommand extends ContainerAwareCommand {
 	 * @see Command
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
-		$ppint = $this->getContainer()->get('ppint.manager');
+		$ppint = $this->getContainer()->get('ppint.package_manager');
 		if ($ppint->downloadPackage($input->getArgument('platform'), $input->getArgument('package'), $input->getArgument('version'), $input->getArgument('path'))) {
 			$this->getContainer()->get('ppint.logger')->info("Successfully downloaded package.");
 		} else {

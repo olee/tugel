@@ -39,20 +39,30 @@ class PHP extends Language {
 
 	public function analyzeProvide($src) {
 		if (PHP::FAST_INDEX) {
-			$index = array(
-				'tag' => array(),
-				'provide_class' => array(),
-				'provide_namespace' => array(),
-			);
+			$tags2 = array();
+			$classes = array();
+			$namespaces = array();
 			
 			preg_match_all('@(?:^|\\s)namespace\\s+\\\\?([a-zA-Z_][\\da-zA-Z\\\\_]*)\\s*;@', $src, $matches);
-			foreach ($matches[1] as $namespace) Utils::array_add($index['provide_namespace'], $namespace);
+			foreach ($matches[1] as $namespace) {
+				Utils::array_add($tags2, $namespace);
+				Utils::array_add($namespaces, $namespace);
+			}
 			
-			$ns = count($index['provide_namespace']) == 1 ? key($index['provide_namespace']) . '\\' : '';
+			$ns = count($namespaces) == 1 ? key($namespaces) . '\\' : '';
 			
 			preg_match_all('@(?:^|\\s)class\\s+([a-zA-Z][\\da-zA-Z_]*)[\\s\\{]@', $src, $matches);
-			foreach ($matches[1] as $class) Utils::array_add($index['provide_class'], $ns . $class);
+			foreach ($matches[1] as $class) {
+				Utils::array_add($tags2, $class);
+				Utils::array_add($classes, $ns . $class);
+			}
 	
+			$index = array(
+				'tag' => array(),
+				'tag2' => $tags2,
+				'provide_class' => $classes,
+				'provide_namespace' => $namespaces,
+			);
 		} else {
 			$index = $this->parseAndIndex($src);
 		}
@@ -67,6 +77,7 @@ class PHP extends Language {
 			'namespace' => $index['provide_namespace'],
 			'class' => $index['provide_class'],
 			'tag' => $index['tag'],
+			'tag2' => $index['tag2'],
 		);
 	}
 

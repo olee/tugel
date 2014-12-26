@@ -21,7 +21,7 @@ class Hackage extends AbstractPlatform {
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 		
 		// Extract files
-		$cmd = 'tar -xzof ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && chmod -Rf 775 ' . escapeshellarg($path) . ' && rm ' . escapeshellarg($path . $fn);
+		$cmd = 'tar -xzof ' . escapeshellarg($this->preparePath($path) . $fn) . ' --strip-components=1 -C ' . escapeshellarg($this->preparePath($path)) . ' && chmod -Rf 775 ' . escapeshellarg($this->preparePath($path)) . ' && rm ' . escapeshellarg($this->preparePath($path) . $fn);
 		exec($cmd, $output, $success);
 		if ($success !== 0)
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;

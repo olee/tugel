@@ -3,6 +3,7 @@
 namespace Zeutzheim\PpintBundle\Model;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Stopwatch\Stopwatch;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -76,16 +77,34 @@ EOM;
 	 */
 	private $finder;
 	
+	/**
+	 * @var TransformedFinderHelper
+	 */
 	private $finderHelper;
 	
+	/**
+	 * @var string
+	 */
 	public $lastQuery;
+	
+	/**
+	 * @var integer
+	 */
+	public $lastQueryTime;
+	
+	/**
+	 * @var Stopwatch
+	 */
+	public $stopwatch;
 
-	public function __construct(EntityManagerInterface $em, Logger $logger, PlatformManager $platformManager, LanguageManager $languageManager, FinderInterface $finder) {
+	public function __construct(EntityManagerInterface $em, Logger $logger, PlatformManager $platformManager, LanguageManager $languageManager, FinderInterface $finder, $stopwatch) {
 		$this->em = $em;
 		$this->logger = $logger;
 		$this->platformManager = $platformManager;
 		$this->languageManager = $languageManager;
 		$this->finder = $finder;
+		$this->stopwatch = $stopwatch;
+		
 		$this->finderHelper = new TransformedFinderHelper($this->finder);
 		$this->packageRepository = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:Package');
 		$this->codeTagRepository = $this->getEntityManager()->getRepository('ZeutzheimPpintBundle:CodeTag');
@@ -182,7 +201,7 @@ EOM;
 			$platform = $this->getPlatformManager()->getPlatform($package->getPlatform()->getName());
 			$platform->index($package, $quick);
 
-			if ($cnt++ % 20 == 0) {
+			if ($cnt++ % 10 == 0) {
 				$this->getEntityManager()->flush();
 				$this->getEntityManager()->clear();
 				// $this->packageRepository->clear();
@@ -243,72 +262,103 @@ EOM;
 		return $this->findPackages(null, $index['namespace'], $index['class'], $index['language'], $index['tag']);
 	}
 
-	public function findPackages($platform = null, $namespaces = null, $classes = null, $languages = null, $codetags = null) {
+	public function findPackages($platform = null, $namespaces = null, $classes = null, $languages = null, $codetags = null, $newTags = false) {
+		if ($this->stopwatch)
+			$this->stopwatch->start('package_search');
+		
 		$query = new ESQ\Bool();
 		
 		if (!$namespaces && !$classes && !$languages && !$codetags)
 			return array();
 		
-		if ($platform) {
+		if (is_string($platform)) {
+			$platform = $this->getPlatformManager()->getPlatform($platform);
+			if ($platform)
+				$platform = $platform->getPlatformEntity();
+		}
+		if (!empty($platform)) {
 			$term = new ESQ\Term();
 			$term->setTerm('platform.id', is_object($platform) ? $platform->getId() : $platform);
 			$query->addMust($term);
 		}
 		
-		if ($namespaces) {
+		if (!empty($namespaces)) {
 			$match = new ESQ\Match();
 			$match->setFieldQuery('namespaces', $namespaces);
-			$match->setFieldParam('namespaces', 'analyzer', 'identifier');
 			$query->addShould($match);
 		}
 		
-		if ($classes) {
+		if (!empty($classes)) {
 			$match = new ESQ\Match();
 			$match->setFieldQuery('classes', $classes);
-			$match->setFieldParam('classes', 'analyzer', 'identifier');
 			$query->addShould($match);
 		}
 		
-		if ($languages) {
+		if (!empty($languages)) {
 			$match = new ESQ\Match();
 			$match->setFieldQuery('languages', strtolower($languages));
-			$match->setFieldParam('languages', 'analyzer', 'whitespace');
 			$query->addMust($match);
 		}
 		
-		if ($codetags) {
-			// Prepare terms
-			preg_match_all(Utils::CAMEL_CASE_PATTERN, $codetags, $matches);
-			$terms = $matches[0];
-			foreach ($terms as &$value)
-				$value = strtolower($value);
-			
-			$termsQuery = new ESF\Terms();
-			$termsQuery->setTerms('codeTags.name', $terms);
-			
-			$useStaticScript = false;
-			$script = $useStaticScript ? 'query-codeTags' : str_replace("\t", '', str_replace("\n", ' ', str_replace("\r", '', PackageManager::CODE_TAG_SCRIPT)));
-			
-			$maxCodeTagCount = (int) $this->packageRepository->createQueryBuilder('pkg')->select('MAX(pkg.codeTagsMaximum)')->getQuery()->getSingleScalarResult();
-						
-			$functionQuery = new ESQ\FunctionScore();
-			$functionQuery->setScoreMode('sum');
-			$functionQuery->setBoostMode('replace');
-			$functionQuery->addFunction('script_score', array('script' => $script, 'params' => array('terms' => $terms, 'codeTagsMaximum' => $maxCodeTagCount)));
-			$functionQuery->setFilter($termsQuery);
-			
-			$query->addMust($functionQuery);
+		if (!empty($codetags)) {
+			if ($newTags) {
+				$match = new ESQ\Match();
+				$match->setFieldQuery('codeTagsText', $codetags);
+				$query->addMust($match);
+			} else {
+				// Prepare terms
+				preg_match_all(Utils::CAMEL_CASE_PATTERN, $codetags, $matches);
+				$terms = $matches[0];
+				foreach ($terms as &$value)
+					$value = strtolower($value);
+				if (count($terms) > 0) {
+					$termsQuery = new ESF\Terms();
+					$termsQuery->setTerms('codeTags.name', $terms);
+					
+					$useStaticScript = false;
+					$script = $useStaticScript ? 'query-codeTags' : str_replace("\t", '', str_replace("\n", ' ', str_replace("\r", '', PackageManager::CODE_TAG_SCRIPT)));
+					
+					$maxCodeTagCount = (int) $this->packageRepository->createQueryBuilder('pkg')->select('MAX(pkg.codeTagsMaximum)')->getQuery()->getSingleScalarResult();
+								
+					$functionQuery = new ESQ\FunctionScore();
+					$functionQuery->setScoreMode('sum');
+					$functionQuery->setBoostMode('replace');
+					$functionQuery->addFunction('script_score', array('script' => $script, 'params' => array('terms' => $terms, 'codeTagsMaximum' => $maxCodeTagCount)));
+					$functionQuery->setFilter($termsQuery);
+					
+					$query->addMust($functionQuery);
+				}
+			}
 		}
 		
 		$query = \Elastica\Query::create($query);
 		$query->setSize(25);
 		$this->lastQuery = $query->toArray();
 		
-		return $this->finderHelper->findWithScore($query);
+		$result = $this->getNormalizedScores($this->finderHelper->findWithScore($query), 2);
+		if ($this->stopwatch)
+			$this->lastQueryTime = $this->stopwatch->stop('package_search')->getDuration();
+		return $result;
 	}
 
-	//*******************************************************************
+	/**
+	 * @return array
+	 */
+	public static function getNormalizedScores(array $results, $max = 0) {
+		foreach ($results as &$value) {
+			$max = max($value->_score, $max);
+		}
+		if ($max > 0) {
+			foreach ($results as &$value) {
+				$value->_percentScore = $value->_score / $max;
+			}
+		}
+		return $results;
+	}
+	
 
+	//*******************************************************************
+	
 	/**
 	 * @return QueryBuilder
 	 */

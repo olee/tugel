@@ -49,14 +49,18 @@ fos_elastica:
                           type: "string"
                         codeTagsMaximum:
                           type: "integer"
+                        codeTagsText:
+                          type: "string"
+                          analyzer: "camelcase"
+                          store: "no"
                         codeTags:
-                            type: "object"
-                            store: "yes"
-                            properties:
-                                name:
-                                  type: "string"
-                                count:
-                                  type: "float"
+                          type: "object"
+                          store: "yes"
+                          properties:
+                            name:
+                              type: "string"
+                            count:
+                              type: "float"
                         languages:
                           type: "string"
                           analyzer: "whitespace"

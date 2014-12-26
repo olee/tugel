@@ -10,16 +10,27 @@
 
 /*********************************/
 
+html.cover {
+  height: 100%;
+  body {
+    height: 100%;
+  }
+}
+
+html {
+  margin: 0;
+}
 body {
-	padding-top: 50px;
+	/*padding-top: 50px;*/
+	position: relative;
 }
 ul, ol {
 	padding-left: 0;
 	list-style: none;
 }
 ul.list, ol.list {
-    list-style: disc;
-    padding-left: 20px;
+  list-style: disc;
+  padding-left: 20px;
 }
 ul.list > li, ol.list > li {
 	margin-bottom: 6px;
@@ -111,56 +122,6 @@ ul.list > li, ol.list > li {
 .table-hover > tbody > tr:hover > td,
 .table-hover > tbody > tr:hover > th {
 	background-color: rgba(0,0,255,0.07);
-}
-
-/*********************************/
-
-body.dark {
-	background-color: @dark-bg;
-}
-.cover-wrapper,
-form.dark,
-body.dark {
-	color: @dark-fg;
-	
-	input,
-	select {
-		background-color: @dark-bg;
-	}
-
-	.form-control {
-		color: @dark-fg;
-		background: @dark-form;
-		border-color: @dark-border;
-	}
-	
-	.jumbotron {
-		background: @dark-form;
-		color: @dark-fg;
-	}
-	.well {
-		color: @dark-fg;
-		background-color: @dark-form;
-		background-image: linear-gradient(to bottom, darken(@dark-form,3%) 0px, lighten(@dark-form,3%) 100%);
-		border-color: @dark-border;
-	}
-	.panel {
-		color: @dark-fg;
-		background-color: @dark-bg;
-		background-image: linear-gradient(to bottom, darken(@dark-bg,3%) 0px, lighten(@dark-bg,3%) 100%);
-		border-color: @dark-border;
-	}
-	.table-striped > tbody > tr:nth-child(odd) > td,
-	.table-striped > tbody > tr:nth-child(odd) > th {
-		background-color: rgba(255,255,255,0.06);
-	}
-	.table-hover > tbody > tr:hover > td,
-	.table-hover > tbody > tr:hover > th {
-		background-color: rgba(255,255,255,0.12);
-	}
-	.table {
-		background-color: @dark-bg;
-	}
 }
 
 /*********************************/
@@ -296,22 +257,22 @@ input.form-control[type="file"] {
 
 /*********************************/
 /* navbar fix when screen-width < 380px */
-
+/*
 body {
 	position: relative;
 }
 .navbar-fixed-top, .navbar-fixed-bottom {
 	position: absolute;
 }
-
+*/
 /* Mobile testing */
 @media (max-width: 400px) {
 	html.dev {
 		background-position: left center;
 		background-size: 320px auto;
+    width: 320px;
 		body { 
 			width: 320px;
-			
 		}
 	}
 }
@@ -335,9 +296,47 @@ body {
 }
 
 @media (min-height: 470px) {
-	.navbar-collapse {
-		max-height: 420px;
-	}
+  .navbar-collapse {
+    max-height: 420px;
+  }
+}
+
+
+/*********************************/
+/* navbar uncollapsed */
+
+li > .navbar-form {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.navbar.uncollapsed {
+  .navbar-collapse.collapse {
+    display: block !important;
+  }
+  .navbar-nav > li, .navbar-nav {
+    float: left !important;
+  }
+  .navbar-nav.navbar-right:last-child {
+    margin-right: -15px !important;
+  }
+  .navbar-right {
+    float: right !important;
+  }
+  @media (max-width: 767px) {
+    .navbar-nav.navbar-form {
+      border: 0;
+      margin: 0;
+      padding: 4px 0 0 0;
+    }
+  }
+  .navbar-toggle {
+    display: none;
+  }
+  .navbar-nav {
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /*********************************/
@@ -465,12 +464,12 @@ body {
 	height: 100%;
 	min-height: 100%;
 	width: 100%;
-	background-color: @dark-bg;
-	color: @dark-fg;
+	/*background-color: @dark-bg;
+	color: @dark-fg;*/
 }
 .cover-wrapper-inner {
 	display: table-cell;
-	vertical-align: top;
+	vertical-align: top; /* top */
 }
 @media (min-width: 768px) {
 	.cover-wrapper-inner {
@@ -480,6 +479,9 @@ body {
 .cover-wrapper .btn-lg {
 	font-weight: bold;
 	padding: 10px 20px;
+}
+.navbar {
+  z-index: 1;
 }
 
 /*************************************************/

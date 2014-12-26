@@ -1,100 +1,27 @@
-{% extends "@ZeutzheimPpint/layout_home.html.twig" %}
+{% extends "@ZeutzheimPpint/layout.html.twig" %}
+
+{% block html_attr 'class="cover"' %}
+
+{% set hideNavbarSearch = true %}
 
 {% block content %}
-{{ parent() }}
-<div class="container">
-	
-	<h1>Package Platform Integration Tool</h1>
-	
-	<h2>Suche</h2>
-	{{ form(searchForm) }}
-	{% if searchResults is defined %}
-		<hr>
-		<h2 id="search-results">Search results</h2>
-		{% if searchResults is empty %}
-			<h3>No results</h3>
-		{% else %}
-			<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-				<thead>
-					<tr>
-						<th style="width:66px;">ID</th>
-						<th>Name</th>
-						<th>Version</th>
-						<th style="width:100px;">Platform</th>
-						<th style="width:60px;">Score</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for id,package in searchResults %}
-					<tr>
-						<td>{{ package.id }}</td>
-						<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
-						<td>{{ package.version }}</td>
-						<td>{{ package.platform.name }}</td>
-						<td class="{{ package._percentScore > 0.66 ? 'score_green' : (package._percentScore > 0.5 ? 'score_orange' : 'score_red') }}">{{ package._score|number_format(3) }}</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		{% endif %}
-		<pre>{{ lastQuery }}</pre>
-	{% endif %}
-	
-	<hr>
-	<h2>Platformen</h2>
-	{% for id,platform in platforms %}
-		<h3>{{ id|capitalize }}</h3>
-		<div>Package count: {{ platform.count }}</div>
-		<div>Indexed package count: {{ platform.indexed_count }}</div>
-		<div>Error package count: {{ platform.error_count }}</div>
-		<h4>Last added:</h4>
-		<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-			<thead>
-				<tr>
-					<th style="width:66px;">ID</th>
-					<th style="width:200px;">Name</th>
-					<th style="width:150px;">Added date</th>
-					<th style="width:120px;">Latest version</th>
-					<th class="desc">Description</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for package in platform.last_added %}
-				<tr>
-					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
-					<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
-					<td>{{ package.version }}</td>
-					<td class="desc">{{ package.description|raw }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-		<h4>Last indexed:</h4>
-		<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-			<thead>
-				<tr>
-					<th style="width:66px;">ID</th>
-					<th style="width:200px;">Name</th>
-					<th style="width:150px;">Indexed date</th>
-					<th style="width:120px;">Latest version</th>
-					<th class="desc">Description</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for package in platform.last_indexed %}
-				<tr>
-					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
-					<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
-					<td>{{ package.version }}</td>
-					<td class="desc">{{ package.description|raw }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-		<hr>
-	{% endfor %}
+<div class="cover-wrapper" style="position:absolute; top:0; min-height: 300px;">
+  <div class="cover-wrapper-inner">
+  	
+<div style="align:center; text-align:center; margin:180px 0;">
+	<div style="max-width:290px; margin:auto;">
+		<h2>PPINT</h2>
+		{{ form_start(searchForm, {attr:{class:''}}) }}
+			<div class="input-group" style="width:100%;">
+				{{ form_widget(searchForm.q, {id:'search_input', attr:{class:'form-control', style:'min-width:215px;'}}) }}
+				<div class="input-group-btn">
+					{{ form_widget(searchForm.submit, {attr:{class:''}}) }}
+				</div>
+			</div>
+		{{ form_end(searchForm) }}
+	</div>
 </div>
-	
+
+  </div>
+</div>
 {% endblock %}

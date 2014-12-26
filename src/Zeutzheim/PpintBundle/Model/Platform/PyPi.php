@@ -19,7 +19,7 @@ use Zeutzheim\PpintBundle\Util\Utils;
 function endsWith($haystack, $needle) {
 	return strcasecmp(substr($haystack, strlen($haystack) - strlen($needle), strlen($needle)), $needle) == 0;
 }
-	
+
 class PyPi extends AbstractPlatform {
 
 	public function doDownload(Package $package, $path, $version) {
@@ -33,18 +33,12 @@ class PyPi extends AbstractPlatform {
 		
 		// Extract files
 		$this->log('Extracting ' . $fn, $package, Logger::DEBUG);
-		if (endsWith($fn, '.zip'))
-			$cmd = 'unzip ' . escapeshellarg($path . $fn) . ' -d ' . escapeshellarg($path);
-		else if (endsWith($fn, '.tar.bz2'))
-			$cmd = 'tar -xjof ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && chmod -Rf 775 ' . escapeshellarg($path);
-		else if (endsWith($fn, '.tar.gz'))
-			$cmd = 'tar -xzof ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && chmod -Rf 775 ' . escapeshellarg($path);
-		else
+		if (!$this->extractArchive($path, $fn)) {
+			@unlink($path . $fn);
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
-		$cmd .= ' && rm ' . escapeshellarg($path . $fn);
-		exec($cmd, $output, $success);
-		if ($success !== 0)
-			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
+		}
+		
+		@unlink($path . $fn);
 	}
 
 	//*******************************************************************

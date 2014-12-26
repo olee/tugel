@@ -1,0 +1,16 @@
+{% use "sskoUtilityBundle:Form:default.html.twig" %}
+
+{# ######################################################### #}
+
+{% block button_widget %}
+	{% if attr.class is defined %}
+		{% set attr = attr|merge({class:'btn btn-primary ' ~ attr.class}) %}
+	{% else %}
+		{% set attr = attr|merge({class:'btn btn-primary btn-row'}) %}
+	{% endif %}
+    {% if label is empty -%}
+        {% set label = name|humanize %}
+    {%- endif -%}
+    <button type="{{ type|default('button') }}" {{ block('button_attributes') }}>{{ label|trans({}, translation_domain) }}</button>
+{% endblock %}
+

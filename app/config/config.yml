@@ -30,6 +30,7 @@ monolog:
     handlers:
         ppint:
             type:     stream
+            level:    info
             path:     "%kernel.logs_dir%/ppint.log"
             channels: ["ppint"]
             formatter: monolog.formatter.simple_line
@@ -44,7 +45,8 @@ twig:
     debug:            "%kernel.debug%"
     strict_variables: "%kernel.debug%"
     form:
-        resources: ['@sskoUtility/Form/default.html.twig']
+        #resources: ['@sskoUtility/Form/default.html.twig']
+        resources: ['@ZeutzheimPpint/Form/default.html.twig']
 
 # Assetic Configuration
 assetic:

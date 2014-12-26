@@ -17,7 +17,7 @@ class CodeTag
 	 * @var string
 	 *
 	 * @ORM\Id
-	 * @ORM\ManyToOne(targetEntity="Package", cascade={"all"}, fetch="EXTRA_LAZY")
+	 * @ORM\ManyToOne(targetEntity="Package", inversedBy="codeTags", cascade={"all"}, fetch="EXTRA_LAZY")
 	 * @ORM\JoinColumn(name="package_id", nullable=false)
 	 */
 	private $package;

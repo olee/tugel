@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html {% block html_attr '' %}>
 <head>
     <meta charset="UTF-8" />
     <title>{% block meta_title %}Welcome!{% endblock %}</title>
@@ -11,7 +11,7 @@
 <!-- JAVASCRIPT LIBRARIES -->
 {% block header_js '' %}
 </head>
-<body {% block body_attr '' %}>
+<body>
 {% block body '' %}
 <!-- JS -->
 {% block javascripts '' %}

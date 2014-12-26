@@ -8,34 +8,35 @@ use Zeutzheim\PpintBundle\Util\Utils;
 class Python extends Language {
 		
 	public function analyzeProvide($src) {
-		$tags = array();
+		$index = array(
+			'tag' => array(),
+			'tag2' => array(),
+			'class' => array(),
+		);
 		
 		//preg_match_all('@(?:^|\\s)module\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*)[^a-zA-Z\\d_$\\.]@', $src, $matches);
-		$namespaces = array();
 		/*
+		$namespaces = array();
 		foreach ($matches[1] as $namespace) {
 			$namespaces[$namespace] = 1;
 			preg_match_all(Utils::CAMEL_CASE_PATTERN, $namespace, $matches);
 			foreach ($matches[0] as $tag)
 				Utils::array_add($tags, $tag);
 		}
-		*/
 		$ns = count($namespaces) == 1 ? key($namespaces) . '.' : '';
+		*/
+		$ns = '';
 		
 		preg_match_all('@(?:^|\\n)\\s+class\\s+([a-zA-Z_$][a-zA-Z\\d_$]*)@', $src, $matches);
-		$classes = array();
 		foreach ($matches[1] as $class) {
-			$classes[$ns . $class] = 1;
+			Utils::array_add($index['tag2'], $class);
+			Utils::array_add($index['provide_class'], $ns . $class);
 			preg_match_all(Utils::CAMEL_CASE_PATTERN, $class, $matches);
 			foreach ($matches[0] as $tag)
-				Utils::array_add($tags, $tag);
+				Utils::array_add($index['tag'], $class);
 		}
 		
-		return array(
-			'namespace' => $namespaces,
-			'class' => $classes,
-			'tag' => $tags,
-		);
+		return $index;
 	}
 		
 	public function analyzeUse($src) {

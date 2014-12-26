@@ -32,16 +32,9 @@ abstract class AbstractPlatform {
 	const ERR_OTHER_ERROR = 4;
 	const ERR_DOWNLOAD_NOT_FOUND = 5;
 	const ERR_NEEDS_REINDEXING = 6;
-	
-	public $ERROR_MESSAGES = array(
-		AbstractPlatform::ERR_PACKAGE_NOT_FOUND => 'Package not found',
-		AbstractPlatform::ERR_VERSION_NOT_FOUND => 'Version not found',
-		AbstractPlatform::ERR_DOWNLOAD_ERROR => 'Download failed',
-		AbstractPlatform::ERR_OTHER_ERROR => 'Unknown error',
-		AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND => 'Download not found',
-		AbstractPlatform::ERR_NEEDS_REINDEXING => 'Needs reindexing',
-	);
-	
+
+	public $ERROR_MESSAGES = array(AbstractPlatform::ERR_PACKAGE_NOT_FOUND => 'Package not found', AbstractPlatform::ERR_VERSION_NOT_FOUND => 'Version not found', AbstractPlatform::ERR_DOWNLOAD_ERROR => 'Download failed', AbstractPlatform::ERR_OTHER_ERROR => 'Unknown error', AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND => 'Download not found', AbstractPlatform::ERR_NEEDS_REINDEXING => 'Needs reindexing', );
+
 	/**
 	 * @var EntityManagerInterface
 	 */
@@ -131,6 +124,12 @@ abstract class AbstractPlatform {
 		return $path;
 	}
 
+	public function preparePath($path) {
+		if (PHP_OS == 'WINNT')
+			$path = '/' . str_replace(':', '', str_replace('\\', '/', $path));
+		return $path;
+	}
+
 	public function index(Package $package, $quick = false) {
 		if ($quick) {
 			if (!$package->getVersion() || !file_exists($this->getCachePath($package) . 'ppint_repository'))
@@ -144,38 +143,44 @@ abstract class AbstractPlatform {
 				$this->log('Failed to get package data', $package, Logger::ERROR);
 				return false;
 			}
-	
+
 			// Get description
 			if (array_key_exists('description', $package->data))
 				$package->setDescription($package->data['description']);
-	
+
 			// Get package name if it's case-sensitive
 			if (array_key_exists('packagename', $package->data))
 				$package->setName($package->data['packagename']);
-	
+
 			// Check if a version was found
 			if (!array_key_exists('version', $package->data) || !$package->data['version']) {
 				$this->log('No version found', $package, Logger::WARNING);
 				$package->setError(AbstractPlatform::ERR_VERSION_NOT_FOUND);
 				return;
 			}
-			
+
 			// Check, if version is the same as the last one indexed (master-versions)
-			if ($package->getVersion() == $package->data['version'] && array_key_exists('version-ref', $package->data)) {
-				if ($package->data['version-ref'] == $package->getVersionReference()) {
+			if ($package->getVersion() == $package->data['version']) {
+				if (!array_key_exists('version-ref', $package->data) || $package->data['version-ref'] == $package->getVersionReference()) {
 					$package->setNew(0);
 					return true;
 				}
 			}
 			$package->setVersion($package->data['version']);
+		} else {
+			$package->data = array();
 		}
 
 		$cachePath = $this->getCachePath($package);
 		$cacheIdFile = $cachePath . 'ppint_repository';
+
 		$cacheVersion = file_exists($cacheIdFile) ? file_get_contents($cacheIdFile) : false;
-		
-		// if ($cacheVersion != $package->getVersion()) {
-		if ($cacheVersion === false) {
+		if (array_key_exists('version-ref', $package->data) && $package->data['version-ref'] != $package->getVersionReference()) {
+			$cacheVersion = false;
+			$package->setVersionReference($package->data['version-ref']);
+		}
+
+		if (!$quick &&  $cacheVersion != $package->getVersion()) {
 			// Prepare download directory
 			exec('rm -rf ' . escapeshellarg($cachePath));
 			mkdir($cachePath, 0777, true);
@@ -222,12 +227,15 @@ abstract class AbstractPlatform {
 		$package->setClasses(array_get($index, 'class'));
 		$package->setNamespaces(array_get($index, 'namespace'));
 		$package->setLanguages(array_get($index, 'language'));
+		$package->setCodeTagsText(array_get($index, 'tag2'));
 		if (array_key_exists('tag', $index)) {
 			$tags = $index['tag'];
-			
+
 			$max = 0;
-			foreach ($tags as $count) $max = max($count, $max);
-			foreach ($tags as &$count) $count /= $max;
+			foreach ($tags as $count)
+				$max = max($count, $max);
+			foreach ($tags as &$count)
+				$count /= $max;
 			$package->setCodeTagsMaximum($max);
 
 			foreach ($package->getCodeTags() as $tag) {
@@ -239,11 +247,8 @@ abstract class AbstractPlatform {
 					// $this->getEntityManager()->remove($tag);
 				}
 			}
-			foreach ($tags as $name => $count) {
-				$package->addCodeTag(new CodeTag($package, $name, $count));
-				// $this->getEntityManager()->persist(new CodeTag($package, $name, $count));
-			}
 		}
+		
 		$package->setError(null);
 		$package->setNew(false);
 		$package->setIndexedDate(new \DateTime());
@@ -264,14 +269,25 @@ abstract class AbstractPlatform {
 		if (!$err)
 			return true;
 		$this->log('download error: ' . $this->ERROR_MESSAGES[$err], $package, Logger::ERROR);
+
+		//exit;
+
 		$package->setError($err);
 		$this->getEntityManager()->flush();
 		return false;
 	}
 
-	//*******************************************************************
-
-	public abstract function doDownload(Package $package, $path, $version);
+	public function log($msg, $obj = null, $logLevel = Logger::INFO) {
+		if ($obj) {
+			if ($obj instanceof Platform)
+				$msg = str_pad($obj->getName(), AbstractPlatform::PLATFORM_STR_LEN) . ' ' . $msg;
+			elseif ($obj instanceof Package)
+				$msg = str_pad($obj->getPlatform()->getName(), AbstractPlatform::PLATFORM_STR_LEN) . ' ' . str_pad($obj->getName(), AbstractPlatform::PACKAGE_STR_LEN) . ' ' . str_pad($obj->getVersion(), AbstractPlatform::VERSION_STR_LEN) . ' ' . $msg;
+			elseif (is_string($obj))
+				$msg = $obj . ' ' . $msg;
+		}
+		$this->getLogger()->log($logLevel, $msg);
+	}
 
 	//*******************************************************************
 
@@ -286,6 +302,8 @@ abstract class AbstractPlatform {
 	public abstract function getMasterVersion();
 
 	public abstract function getPackageData(Package $package);
+
+	public abstract function doDownload(Package $package, $path, $version);
 
 	//*******************************************************************
 
@@ -317,7 +335,9 @@ abstract class AbstractPlatform {
 			$this->packageQb->where('e.platform = ?1');
 			$this->packageQb->andWhere('e.name = ?2');
 		}
-		return $this->packageQb->setParameters(array(1 => $this->getPlatformEntity()->getId(), 2 => $name))->getQuery()->getOneOrNullResult();
+		$res = $this->packageQb->setParameters(array(1 => $this->getPlatformReference(), 2 => $name))->getQuery()->getOneOrNullResult();
+		//$this->log("search $name = " . $res, $this->getPlatformEntity());
+		return $res;
 	}
 
 	//*******************************************************************
@@ -329,19 +349,39 @@ abstract class AbstractPlatform {
 		//curl_setopt($ch, CURLOPT_USERPWD, 'USERNAME:PASSWORD');
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_URL, $url);
 		$result = curl_exec($ch);
 		$statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
-		if ($statusCode != 200)
+		if ($statusCode != 200) {
 			return false;
+		}
 		return $result;
+	}
+
+	public function httpCheck($url) {
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_USERAGENT, 'github-olee');
+		curl_setopt($ch, CURLOPT_NOBODY, true);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_URL, $url);
+		$result = curl_exec($ch);
+		$statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+		if ($statusCode != 200) {
+			return false;
+		}
+		return true;
 	}
 
 	public function downloadFile($url, $path) {
 		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_USERAGENT, 'github-olee');
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_FILE, fopen($path, 'w'));
 		curl_setopt($ch, CURLOPT_URL, $url);
 		$result = curl_exec($ch);
@@ -349,18 +389,60 @@ abstract class AbstractPlatform {
 		return $result;
 	}
 
-	public function log($msg, $obj = null, $logLevel = Logger::INFO) {
-		if ($obj) {
-			if ($obj instanceof Platform)
-				$msg = str_pad($obj->getName(), AbstractPlatform::PLATFORM_STR_LEN) . ' ' . $msg;
-			elseif ($obj instanceof Package)
-				$msg = str_pad($obj->getPlatform()->getName(), AbstractPlatform::PLATFORM_STR_LEN) . ' ' . 
-					str_pad($obj->getName(), AbstractPlatform::PACKAGE_STR_LEN) . ' ' . 
-					str_pad($obj->getVersion(), AbstractPlatform::VERSION_STR_LEN) . ' ' . $msg;
-			elseif (is_string($obj))
-				$msg = $obj . ' ' . $msg;
+	public function strEndsWith($haystack, $needle) {
+		return strcasecmp(substr($haystack, strlen($haystack) - strlen($needle), strlen($needle)), $needle) == 0;
+	}
+
+	public function extractArchive($path, $fn) {
+		if ($this->strEndsWith($fn, '.zip'))
+			return $this->extractZip($path, $fn);
+		else if ($this->strEndsWith($fn, '.tar.bz2'))
+			return $this->extractTarBz2($path, $fn);
+		else if ($this->strEndsWith($fn, '.tar.gz'))
+			return $this->extractTarZip($path, $fn);
+		else
+			return false;
+	}
+
+	public function extractTarZip($path, $fn) {
+		$cmd = 'tar -xzof ' . escapeshellarg($this->preparePath($path) . $fn) . ' --strip-components=1 -C ' . escapeshellarg($this->preparePath($path)) . ' && chmod -Rf 775 ' . escapeshellarg($this->preparePath($path));
+		exec($cmd, $output, $success);
+		return $success == 0 || $success == 2;
+	}
+
+	public function extractTarBz2($path, $fn) {
+		$cmd = 'tar -xjof ' . escapeshellarg($this->preparePath($path) . $fn) . ' --strip-components=1 -C ' . escapeshellarg($this->preparePath($path)) . ' && chmod -Rf 775 ' . escapeshellarg($this->preparePath($path));
+		exec($cmd, $output, $success);
+		return $success == 0;
+	}
+
+	public function extractZip($path, $fn) {
+		$cmd = 'unzip -o -d ' . escapeshellarg($path) . ' ' . escapeshellarg($path . $fn);
+		exec($cmd, $output, $success);
+		return $success == 0;
+	}
+
+	public function deleteFile($path, $fn) {
+		return @unlink($path . $fn);
+	}
+
+	public function checkRepository($url) {
+		if (preg_match('@github\\.com/repos/([^/]+/[^/]+)@', $url, $matches)) {
+			$this->getLogger()->debug('> Checking github url at ' . 'https://api.github.com/repos/' . $matches[1]);
+			$result = $this->httpCheck('https://api.github.com/repos/' . $matches[1] . '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7');
+			return $result;
 		}
-		$this->getLogger()->log($logLevel, $msg);
+		if (preg_match('@github\\.com/([^/]+/[^/]+)@', $url, $matches)) {
+			$this->getLogger()->debug('> Checking github url at ' . 'https://api.github.com/repos/' . $matches[1]);
+			$result = $this->httpCheck('https://api.github.com/repos/' . $matches[1] . '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7');
+			return $result;
+		}
+		if (preg_match('@bitbucket\\.org/([^/]+/[^/]+)@', $url, $matches)) {
+			$this->getLogger()->debug('> Checking bitbucket url at ' . 'https://api.bitbucket.org/1.0/repositories/' . $matches[1]);
+			$result = $this->httpCheck('https://api.bitbucket.org/1.0/repositories/' . $matches[1]);
+			return $result;
+		}
+		return true;
 	}
 
 	public function recursiveScandir($path, $excludeHidden = true) {
@@ -428,7 +510,7 @@ abstract class AbstractPlatform {
 	 * @return Platform
 	 */
 	public function getPlatformReference() {
-		if (!$this->platformReference) {
+		if (!$this->platformReference || !$this->getEntityManager()->contains($this->platformReference)) {
 			$this->platformReference = $this->getEntityManager()->getReference('ZeutzheimPpintBundle:Platform', $this->getPlatformEntity()->getId());
 		}
 		return $this->platformReference;

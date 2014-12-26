@@ -45,6 +45,7 @@ class Package {
 	 * @var string
 	 *
 	 * @ORM\Column(name="description", type="string", length=1024, nullable=true)
+	 * @JMS\Groups({"details", "description"})
 	 */
 	private $description;
 
@@ -61,6 +62,7 @@ class Package {
 	 * @var boolean
 	 *
 	 * @ORM\Column(name="new", type="boolean", nullable=false)
+	 * @JMS\Exclude
 	 */
 	private $new;
 
@@ -74,7 +76,8 @@ class Package {
 	/**
 	 * @var string
 	 *
-	 * @ORM\Column(name="version_ref", type="string", length=32, nullable=true)
+	 * @ORM\Column(name="version_ref", type="string", length=64, nullable=true)
+	 * @JMS\Exclude
 	 */
 	private $versionReference;
 
@@ -89,6 +92,7 @@ class Package {
 	 * @var integer
 	 *
 	 * @ORM\Column(name="error", type="integer", nullable=true)
+	 * @JMS\Exclude
 	 */
 	private $error;
 
@@ -98,6 +102,7 @@ class Package {
 	 * @var string
 	 *
 	 * @ORM\Column(name="namespaces", type="text", nullable=true)
+	 * @JMS\Groups({"details"})
 	 */
 	private $namespaces;
 
@@ -105,6 +110,7 @@ class Package {
 	 * @var string
 	 *
 	 * @ORM\Column(name="classes", type="text", nullable=true)
+	 * @JMS\Groups({"details"})
 	 */
 	private $classes;
 
@@ -113,8 +119,17 @@ class Package {
 	 *
 	 * @ORM\OneToMany(targetEntity="CodeTag", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
 	 * @ORM\OrderBy({"count" = "DESC"})
+	 * @JMS\Groups({"details"})
 	 */
 	private $codeTags;
+
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="codetagstext", type="text", nullable=true)
+	 * @JMS\Groups({"details"})
+	 */
+	private $codeTagsText;
 
 	/**
 	 * @var integer
@@ -133,7 +148,21 @@ class Package {
 	//*******************************************************************
 
 	/**
+	 * @var float
+	 * 
+	 */
+	public $_score;
+	
+	/**
+	 * @var float
+	 * 
+	 */
+	public $_percentScore;
+	
+	/**
 	 * @var array
+	 * 
+	 * @JMS\Exclude
 	 */
 	public $data;
 
@@ -489,4 +518,26 @@ class Package {
 
 	//*******************************************************************
 
+	/**
+	 * Set codeTagsText
+	 *
+	 * @param string $codeTagsText
+	 * @return Package
+	 */
+	public function setCodeTagsText($codeTagsText) {
+		$this->codeTagsText = $codeTagsText;
+		return $this;
+	}
+
+	/**
+	 * Get codeTagsText
+	 *
+	 * @return string
+	 */
+	public function getCodeTagsText() {
+		return $this->codeTagsText;
+	}
+
+	//*******************************************************************
+	
 }
