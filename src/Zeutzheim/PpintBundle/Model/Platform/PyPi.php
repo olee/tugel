@@ -47,10 +47,6 @@ class PyPi extends AbstractPlatform {
 		return 'pypi';
 	}
 
-	public function getBaseUrl() {
-		return 'https://pypi.python.org/pypi/';
-	}
-
 	public function getCrawlUrl() {
 		return 'https://pypi.python.org/pypi?%3Aaction=rss';
 	}
@@ -63,17 +59,21 @@ class PyPi extends AbstractPlatform {
 		return '@<link>http://pypi.python.org/pypi/([^/]+)/[^/<]+</link>@i';
 	}
 
+	public function getPackageUrl(Package $package) {
+		return 'https://pypi.python.org/pypi/' . $package->getName();
+	}
+
 	public function getPackageData(Package $package) {
-		$json = $this->httpGet($this->getBaseUrl() . $package->getName() . '/json');
+		$json = $this->httpGet('https://pypi.python.org/pypi/' . $package->getName() . '/json');
 		if ($json === false) {
 			// echo 'Error downloading data'; exit;
-			return false;
+			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 		
 		$data = json_decode($json, TRUE);
 		if ($data === null) {
 			// echo 'Error reading data'; exit;
-			return false;
+			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 		
 		$downloadurl = null;
@@ -97,7 +97,6 @@ class PyPi extends AbstractPlatform {
 			'packagename' => $data['info']['name'],
 			'downloadurl' => $downloadurl,
 		);
-		return true;
 	}
 
 }

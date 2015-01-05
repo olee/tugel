@@ -97,25 +97,24 @@ class DefaultController extends ControllerHelperNT {
 			 * @var PackageManager
 			 */
 			$pm = $this->get('ppint.package_manager');
-			//*
+				
 			$searchResults = $pm->findPackages($platform, null, null, $language, $query, true);
-			$params['searchResults2'] = $searchResults;
-			$params['lastQuery2'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
-			$params['lastQueryTime2'] = $pm->lastQueryTime;
-			
-			$params['scores2'] = array();
-			$params['percentScores2'] = array();
-			foreach ($searchResults as $p) { $params['scores2'][$p->getId()] = $p->_score; $params['percentScores2'][$p->getId()] = $p->_percentScore; }
-			//*/
-			
-			$searchResults = $pm->findPackages($platform, null, null, $language, $query);
 			$params['searchResults'] = $searchResults;
 			$params['lastQuery'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
 			$params['lastQueryTime'] = $pm->lastQueryTime;
-			
 			$params['scores'] = array();
 			$params['percentScores'] = array();
 			foreach ($searchResults as $p) { $params['scores'][$p->getId()] = $p->_score; $params['percentScores'][$p->getId()] = $p->_percentScore; }
+
+			if ($this->get('kernel')->isDebug()) {
+				$searchResults = $pm->findPackages($platform, null, null, $language, $query);
+				$params['searchResults2'] = $searchResults;
+				$params['lastQuery2'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
+				$params['lastQueryTime2'] = $pm->lastQueryTime;
+				$params['scores2'] = array();
+				$params['percentScores2'] = array();
+				foreach ($searchResults as $p) { $params['scores2'][$p->getId()] = $p->_score; $params['percentScores2'][$p->getId()] = $p->_percentScore; }				
+			}
 		}
 		return $params;
 	}

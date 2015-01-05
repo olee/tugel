@@ -51,10 +51,6 @@ class Packagist extends AbstractPlatform {
 		return 'packagist';
 	}
 
-	public function getBaseUrl() {
-		return 'https://packagist.org/packages/';
-	}
-
 	public function getCrawlUrl() {
 		return 'https://packagist.org/feeds/releases.rss';
 	}
@@ -67,17 +63,21 @@ class Packagist extends AbstractPlatform {
 		return '@<link>https://packagist.org/packages/([^<]*)</link>@i';
 	}
 
+	public function getPackageUrl(Package $package) {
+		return 'https://packagist.org/packages/' . $package->getName();
+	}
+
 	public function getPackageData(Package $package) {
-		$json = $this->httpGet($this->getBaseUrl() . $package->getName() . '.json');
+		$json = $this->httpGet('https://packagist.org/packages/' . $package->getName() . '.json');
 		if ($json === false) {
 			// echo 'Error downloading data'; exit;
-			return false;
+			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 		
 		$data = json_decode($json, true);
 		if ($data === null) {
 			// echo 'Error reading data'; exit;
-			return false;
+			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 		
 		$lastestVersion = null;
@@ -106,8 +106,6 @@ class Packagist extends AbstractPlatform {
 			$package->data['git'] = array_key_exists('source', $versionData) ? $versionData['source']['url'] : null;
 			$package->data['git-reference'] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : null;
 		}
-			
-		return true;
 	}
 	
 }

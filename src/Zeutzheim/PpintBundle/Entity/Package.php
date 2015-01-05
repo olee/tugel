@@ -5,6 +5,8 @@ namespace Zeutzheim\PpintBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as JMS;
 
+use Zeutzheim\PpintBundle\Model\AbstractPlatform;
+
 /**
  * ZeutzheimPpintBundle:Package
  *
@@ -189,6 +191,12 @@ class Package {
 	public function isIndexed() {
 		return $this->version && !$this->error;
 	}
+
+	public function getUrl() {
+		return $this->platform->getPlatform()->getPackageUrl($this);
+	}
+
+	//*******************************************************************
 
 	/**
 	 * Get id

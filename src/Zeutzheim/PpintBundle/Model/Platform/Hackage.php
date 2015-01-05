@@ -33,10 +33,6 @@ class Hackage extends AbstractPlatform {
 		return 'hackage';
 	}
 
-	public function getBaseUrl() {
-		return 'https://hackage.haskell.org/package/';
-	}
-
 	public function getCrawlUrl() {
 		return 'https://hackage.haskell.org/packages/recent.rss';
 	}
@@ -49,10 +45,14 @@ class Hackage extends AbstractPlatform {
 		return '@<link>http://hackage.haskell.org/package/([^<]*)-[\d\.]*</link>@i';
 	}
 
+	public function getPackageUrl(Package $package) {
+		return 'https://hackage.haskell.org/package/' . $package->getName();
+	}
+
 	public function getPackageData(Package $package) {
-		$src = $this->httpGet($this->getBaseUrl() . $package->getName());
+		$src = $this->httpGet('https://hackage.haskell.org/package/' . $package->getName());
 		if ($src === false) {
-			return false;
+			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 		
 		$package->data = array();
@@ -66,8 +66,6 @@ class Hackage extends AbstractPlatform {
 		if (isset($matches[1])) {
 			$package->data['description'] = strip_tags($matches[1]);
 		}
-		
-		return true;
 	}
 
 }

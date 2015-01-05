@@ -31,7 +31,8 @@ abstract class AbstractPlatform {
 	const ERR_DOWNLOAD_ERROR = 3;
 	const ERR_OTHER_ERROR = 4;
 	const ERR_DOWNLOAD_NOT_FOUND = 5;
-	const ERR_NEEDS_REINDEXING = 6;
+	const ERR_NEEDS_REINDEXING = 10;
+	const ERR_PACKAGEDATA_NOT_FOUND = 11;
 
 	public $ERROR_MESSAGES = array(AbstractPlatform::ERR_PACKAGE_NOT_FOUND => 'Package not found', AbstractPlatform::ERR_VERSION_NOT_FOUND => 'Version not found', AbstractPlatform::ERR_DOWNLOAD_ERROR => 'Download failed', AbstractPlatform::ERR_OTHER_ERROR => 'Unknown error', AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND => 'Download not found', AbstractPlatform::ERR_NEEDS_REINDEXING => 'Needs reindexing', );
 
@@ -118,9 +119,10 @@ abstract class AbstractPlatform {
 	}
 
 	public function getCachePath(Package $package) {
-		$path = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $package->getName() . '/' . $package->getVersion() . '/';
+		$name = str_replace(':', '_', $package->getName());
+		$path = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $name . '/' . $package->getVersion() . '/';
 		if (!file_exists($path . 'ppint_repository'))
-			$path = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $package->getName() . '/';
+			$path = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $name . '/';
 		return $path;
 	}
 
@@ -138,8 +140,9 @@ abstract class AbstractPlatform {
 		if (!$quick) {
 			// Load package-data
 			$this->log('Checking package data', $package, Logger::INFO);
-			if (!$this->getPackageData($package)) {
-				$package->setError(true);
+			$err = $this->getPackageData($package);
+			if ($err) {
+				$package->setError($err);
 				$this->log('Failed to get package data', $package, Logger::ERROR);
 				return false;
 			}
@@ -293,8 +296,6 @@ abstract class AbstractPlatform {
 
 	public abstract function getName();
 
-	public abstract function getBaseUrl();
-
 	public abstract function getCrawlUrl();
 
 	public abstract function getPackageRegex();
@@ -304,6 +305,8 @@ abstract class AbstractPlatform {
 	public abstract function getPackageData(Package $package);
 
 	public abstract function doDownload(Package $package, $path, $version);
+
+	public abstract function getPackageUrl(Package $package);
 
 	//*******************************************************************
 
@@ -498,7 +501,6 @@ abstract class AbstractPlatform {
 			if (!$this->platformEntity) {
 				$this->platformEntity = new Platform();
 				$this->platformEntity->setName($this->getName());
-				$this->platformEntity->setBaseUrl($this->getBaseUrl());
 				$this->getEntityManager()->persist($this->platformEntity);
 				$this->getEntityManager()->flush();
 			}

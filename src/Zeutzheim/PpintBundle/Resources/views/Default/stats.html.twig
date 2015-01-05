@@ -14,7 +14,7 @@
 			<thead>
 				<tr>
 					<th style="width:66px;">ID</th>
-					<th style="width:200px;">Name</th>
+					<th style="width:250px;">Name</th>
 					<th style="width:150px;">Added date</th>
 					<th style="width:120px;">Latest version</th>
 					<th class="desc">Description</th>
@@ -24,7 +24,7 @@
 				{% for package in platform.last_added %}
 				<tr>
 					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
+					<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
 					<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
 					<td>{{ package.version }}</td>
 					<td class="desc">{{ package.description|raw }}</td>
@@ -37,7 +37,7 @@
 			<thead>
 				<tr>
 					<th style="width:66px;">ID</th>
-					<th style="width:200px;">Name</th>
+					<th style="width:250px;">Name</th>
 					<th style="width:150px;">Indexed date</th>
 					<th style="width:120px;">Latest version</th>
 					<th class="desc">Description</th>
@@ -47,7 +47,7 @@
 				{% for package in platform.last_indexed %}
 				<tr>
 					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a></td>
+					<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
 					<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
 					<td>{{ package.version }}</td>
 					<td class="desc">{{ package.description|raw }}</td>

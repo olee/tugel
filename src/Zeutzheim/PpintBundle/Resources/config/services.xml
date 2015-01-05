@@ -6,6 +6,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 
 	<parameters>
 		<parameter key="ppint.package_manager.class">Zeutzheim\PpintBundle\Model\PackageManager</parameter>
+		<parameter key="ppint.doctrine_subscriber.class">Zeutzheim\PpintBundle\Event\DoctrineEventSubscriber</parameter>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
 		<parameter key="ppint.platform_manager.class">Zeutzheim\PpintBundle\Model\PlatformManager</parameter>
@@ -13,6 +14,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<parameter key="ppint.platform.packagist.class">Zeutzheim\PpintBundle\Model\Platform\Packagist</parameter>
 		<parameter key="ppint.platform.hackage.class">Zeutzheim\PpintBundle\Model\Platform\Hackage</parameter>
 		<parameter key="ppint.platform.pypi.class">Zeutzheim\PpintBundle\Model\Platform\PyPi</parameter>
+		<parameter key="ppint.platform.maven.class">Zeutzheim\PpintBundle\Model\Platform\Maven</parameter>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
 		<parameter key="ppint.language_manager.class">Zeutzheim\PpintBundle\Model\LanguageManager</parameter>
@@ -61,6 +63,9 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<service id="ppint.platform.pypi" class="%ppint.platform.pypi.class%" parent="ppint.platform">
 			<tag name="ppint.platform" />
 		</service>
+		<service id="ppint.platform.maven" class="%ppint.platform.maven.class%" parent="ppint.platform">
+			<tag name="ppint.platform" />
+		</service>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
 		<service id="ppint.language_manager" class="%ppint.language_manager.class%" />
@@ -81,8 +86,16 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<service id="ppint.language.python" class="%ppint.language.python.class%" parent="ppint.language">
 			<tag name="ppint.language" />
 		</service>
+		
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
-
+        
+        <service id="ppint.doctrine_subscriber" class="%ppint.doctrine_subscriber.class%">
+            <tag name="doctrine.event_subscriber" connection="default" />
+            <argument type="service" id="service_container" />
+        </service>
+        
+        <!-- - - - - - - - - - - - - - - - - - - - - -->
+        
 	</services>
 
 </container>

@@ -5,6 +5,8 @@ namespace Zeutzheim\PpintBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as JMS;
 
+use Zeutzheim\PpintBundle\Model\AbstractPlatform;
+
 /**
  * ZeutzheimPpintBundle:Platform
  *
@@ -29,13 +31,6 @@ class Platform {
 	private $name;
 
 	/**
-	 * @var string
-	 *
-	 * @ORM\Column(name="base_url", type="string", length=255, nullable=false)
-	 */
-	private $baseUrl;
-
-	/**
 	 * @var \Doctrine\Common\Collections\Collection
 	 *
 	 * @ORM\OneToMany(targetEntity="Package", mappedBy="platform", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
@@ -44,6 +39,13 @@ class Platform {
 
 	//*******************************************************************
 
+	/**
+	 * @var AbstractPlatform
+	 */
+	public $platform;
+
+	//*******************************************************************
+	
 	/**
 	 * Constructor
 	 */
@@ -63,6 +65,13 @@ class Platform {
 	 */
 	public function getId() {
 		return $this->id;
+	}
+
+	/**
+	 * @return AbstractPlatform
+	 */
+	public function getPlatform() {
+		return $this->platform;
 	}
 
 	//*******************************************************************
@@ -85,28 +94,6 @@ class Platform {
 	 */
 	public function getName() {
 		return $this->name;
-	}
-
-	//*******************************************************************
-
-	/**
-	 * Set baseUrl
-	 *
-	 * @param string $baseUrl
-	 * @return Platform
-	 */
-	public function setBaseUrl($baseUrl) {
-		$this->baseUrl = $baseUrl;
-		return $this;
-	}
-
-	/**
-	 * Get baseUrl
-	 *
-	 * @return string
-	 */
-	public function getBaseUrl() {
-		return $this->baseUrl;
 	}
 
 	//*******************************************************************

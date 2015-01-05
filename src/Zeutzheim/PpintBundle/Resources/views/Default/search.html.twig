@@ -2,6 +2,8 @@
 
 {% block content %}
 <div class="container">
+	
+{% if app.environment == 'dev' %}
 	<div class="row">
 		<div class="col-sm-6">
 {% if searchResults is defined %}
@@ -15,7 +17,7 @@
 {% else %}
 						<span class="score_red" style="font-size:0.8em;">0.000</span>
 {% endif %}
-						<a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a>
+						<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
 					</h4>
 					<div>#{{ package.id }} platform:{{ package.platform.name }} - version:{{ package.version }}</div>
 					<p>{{ package.description[:250] ~ '...' }}</p>
@@ -37,7 +39,7 @@
 {% else %}
 						<span class="score_red" style="font-size:0.8em;">0.000</span>
 {% endif %}
-						<a target="_blank" href="{{ package.platform.baseUrl ~ package.name }}">{{ package.name }}</a>
+						<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
 					</h4>
 					<div>#{{ package.id }} platform:{{ package.platform.name }} - version:{{ package.version }}</div>
 					<p>{{ package.description[:250] ~ '...' }}</p>
@@ -48,5 +50,18 @@
 {% endif %}
 		</div>
 	</div>
+{% else %}
+			<ul>
+				{% for id,package in searchResults %}
+				<li>
+					<h4>
+						<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
+					</h4>
+					<div>platform:{{ package.platform.name }} - version:{{ package.version }}</div>
+					<p>{{ package.description[:250] ~ '...' }}</p>
+				</li>
+				{% endfor %}
+			</ul>
+{% endif %}
 </div>
 {% endblock %}
