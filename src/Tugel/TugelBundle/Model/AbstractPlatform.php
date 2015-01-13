@@ -163,11 +163,11 @@ abstract class AbstractPlatform {
 				$package->setError(AbstractPlatform::ERR_VERSION_NOT_FOUND);
 				if ($dry)
 					$this->getEntityManager()->refresh($package);
-				return;
+				return false;
 			}
 
 			// Check, if version is the same as the last one indexed (master-versions)
-			if ($package->getVersion() == $package->data['version']) {
+			if (!$package->getError() && $package->getVersion() == $package->data['version']) {
 				if (!array_key_exists('version-ref', $package->data) || $package->data['version-ref'] == $package->getVersionReference()) {
 					$package->setNew(0);
 					if ($dry)

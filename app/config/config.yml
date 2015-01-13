@@ -45,7 +45,7 @@ twig:
     debug:            "%kernel.debug%"
     strict_variables: "%kernel.debug%"
     form:
-        resources: ['@Tugel/Form/bootstrap_3_layout.html.twig']
+        resources: ['TugelBundle:Form:bootstrap_3_layout.html.twig']
 
 # Assetic Configuration
 assetic:
