@@ -182,19 +182,20 @@ EOM;
 			if (!$package)
 				continue;
 
-			if ($package->getError() && $package->getError() != AbstractPlatform::ERR_DOWNLOAD_ERROR) {
-				switch ($package->getError()) {
-					case AbstractPlatform::ERR_PACKAGE_NOT_FOUND:
-						$this->log('skipped - package not found', $version, Logger::NOTICE);
-						break;
-					case AbstractPlatform::ERR_DOWNLOAD_ERROR:
-						$this->log('skipped - download error', $version, Logger::NOTICE);
-						break;
-					default:
-						$this->log('skipped - unknown error', $version, Logger::NOTICE);
-						break;
-				}
-				continue;
+			switch ($package->getError()) {
+				case null:
+				case AbstractPlatform::ERR_DOWNLOAD_ERROR:
+				case AbstractPlatform::ERR_NEEDS_REINDEXING:
+					break;
+				case AbstractPlatform::ERR_PACKAGE_NOT_FOUND:
+					$this->log('skipped - package not found', $package, Logger::NOTICE);
+					continue 2;
+				case AbstractPlatform::ERR_DOWNLOAD_ERROR:
+					$this->log('skipped - download error', $package, Logger::NOTICE);
+					continue 2;
+				default:
+					$this->log('skipped - unknown error', $package, Logger::NOTICE);
+					continue 2;
 			}
 
 			// Start indexing
