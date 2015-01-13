@@ -1,5 +1,5 @@
-zeutzheim_ppint:
-    resource: "@ZeutzheimPpintBundle/Controller/"
+tugel:
+    resource: "@TugelBundle/Controller/"
     type:     annotation
     prefix:   /
 

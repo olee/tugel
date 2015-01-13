@@ -12,7 +12,7 @@ web_profiler:
     intercept_redirects: %debug_redirects%
 
 monolog:
-    channels: ["ppint"]
+    channels: ["tugel"]
     handlers:
         main:
             type:   stream

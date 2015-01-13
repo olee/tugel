@@ -1,0 +1,12 @@
+{% extends "@Tugel/layout.html.twig" %}
+
+{% block content %}
+<div class="container">
+	{#{ form(form) }#}
+	{{ form_start(form) }}
+		{{ form_row(form.submit) }}
+		{{ form_row(form.submit2, {attr:{type:'success'}}) }}
+		{{ form_row(form.submit3, {attr:{type:'danger'}}) }}
+	{{ form_end(form) }}
+</div>
+{% endblock %}

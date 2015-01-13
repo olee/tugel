@@ -26,7 +26,7 @@ class AppKernel extends Kernel
 			/* ssko */
             new ssko\UtilityBundle\sskoUtilityBundle(),
 
-            new Zeutzheim\PpintBundle\ZeutzheimPpintBundle(),
+            new Tugel\TugelBundle\TugelBundle(),
         );
 
         if (in_array($this->getEnvironment(), array('dev', 'test'))) {

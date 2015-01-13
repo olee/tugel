@@ -24,16 +24,6 @@ fos_elastica:
                                 pattern: "([^\\p{L}\\d]+)|(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"
                                 lowercase: true
             types:
-#                package:
-#                    mappings:
-#                        name: ~
-#                        description: ~
-#                        url: ~
-#                    persistence:
-#                        driver: orm
-#                        model: Zeutzheim\PpintBundle\Entity\Package
-#                        provider: ~
-#                        listener: ~
                 package:
                     indexable_callback: isIndexed
                     mappings:
@@ -73,7 +63,7 @@ fos_elastica:
                           analyzer: "identifier"
                     persistence:
                         driver: orm
-                        model: Zeutzheim\PpintBundle\Entity\Package
+                        model: Tugel\TugelBundle\Entity\Package
                         provider: ~
                         listener: ~
                         finder: ~

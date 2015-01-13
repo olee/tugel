@@ -1,0 +1,101 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+	<parameters>
+		<parameter key="tugel.package_manager.class">Tugel\TugelBundle\Model\PackageManager</parameter>
+		<parameter key="tugel.doctrine_subscriber.class">Tugel\TugelBundle\Event\DoctrineEventSubscriber</parameter>
+
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<parameter key="tugel.platform_manager.class">Tugel\TugelBundle\Model\PlatformManager</parameter>
+		<parameter key="tugel.platform.class">Tugel\TugelBundle\Model\AbstractPlatform</parameter>
+		<parameter key="tugel.platform.packagist.class">Tugel\TugelBundle\Model\Platform\Packagist</parameter>
+		<parameter key="tugel.platform.hackage.class">Tugel\TugelBundle\Model\Platform\Hackage</parameter>
+		<parameter key="tugel.platform.pypi.class">Tugel\TugelBundle\Model\Platform\PyPi</parameter>
+		<parameter key="tugel.platform.maven.class">Tugel\TugelBundle\Model\Platform\Maven</parameter>
+
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<parameter key="tugel.language_manager.class">Tugel\TugelBundle\Model\LanguageManager</parameter>
+		<parameter key="tugel.language.class">Tugel\TugelBundle\Model\Language</parameter>
+		<parameter key="tugel.language.php.class">Tugel\TugelBundle\Model\Language\PHP</parameter>
+		<parameter key="tugel.language.java.class">Tugel\TugelBundle\Model\Language\Java</parameter>
+		<parameter key="tugel.language.haskell.class">Tugel\TugelBundle\Model\Language\Haskell</parameter>
+		<parameter key="tugel.language.python.class">Tugel\TugelBundle\Model\Language\Python</parameter>
+	</parameters>
+	<services>
+		
+		<service id="monolog.logger.tugel" parent="monolog.logger_prototype">
+			<argument index="0">tugel</argument>
+		</service>
+		<service id="tugel.logger" alias="monolog.logger.tugel" />
+
+		<service id="monolog.formatter.simple_line" class="Monolog\Formatter\LineFormatter">
+			<argument>[%%datetime%%] %%level_name%%: %%message%%&#xA;</argument>
+		</service>
+
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<service id="tugel.package_manager" class="%tugel.package_manager.class%">
+			<argument type="service" id="doctrine.orm.entity_manager" />
+			<argument type="service" id="tugel.logger" />
+			<argument type="service" id="tugel.platform_manager" />
+			<argument type="service" id="tugel.language_manager" />
+			<argument type="service" id="fos_elastica.finder.search.package" />
+			<argument type="service" id="debug.stopwatch" on-invalid="null" />
+		</service>
+
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<service id="tugel.platform_manager" class="%tugel.platform_manager.class%" />
+		<service id="tugel.platform" class="%tugel.platform.class%">
+			<argument type="service" id="doctrine.orm.entity_manager" />
+			<argument type="service" id="tugel.logger" />
+			<argument type="service" id="tugel.language_manager" />
+		</service>
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<!-- Platform managers -->
+		<service id="tugel.platform.packagist" class="%tugel.platform.packagist.class%" parent="tugel.platform">
+			<tag name="tugel.platform" />
+		</service>
+		<service id="tugel.platform.hackage" class="%tugel.platform.hackage.class%" parent="tugel.platform">
+			<tag name="tugel.platform" />
+		</service>
+		<service id="tugel.platform.pypi" class="%tugel.platform.pypi.class%" parent="tugel.platform">
+			<tag name="tugel.platform" />
+		</service>
+		<service id="tugel.platform.maven" class="%tugel.platform.maven.class%" parent="tugel.platform">
+			<tag name="tugel.platform" />
+		</service>
+
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<service id="tugel.language_manager" class="%tugel.language_manager.class%" />
+		<service id="tugel.language" class="%tugel.language.class%">
+			<argument type="service" id="tugel.logger" />
+		</service>
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+		<!-- Language managers -->
+		<service id="tugel.language.php" class="%tugel.language.php.class%" parent="tugel.language">
+			<tag name="tugel.language" />
+		</service>
+		<service id="tugel.language.java" class="%tugel.language.java.class%" parent="tugel.language">
+			<tag name="tugel.language" />
+		</service>
+		<service id="tugel.language.haskell" class="%tugel.language.haskell.class%" parent="tugel.language">
+			<tag name="tugel.language" />
+		</service>
+		<service id="tugel.language.python" class="%tugel.language.python.class%" parent="tugel.language">
+			<tag name="tugel.language" />
+		</service>
+		
+		<!-- - - - - - - - - - - - - - - - - - - - - -->
+        
+        <service id="tugel.doctrine_subscriber" class="%tugel.doctrine_subscriber.class%">
+            <tag name="doctrine.event_subscriber" connection="default" />
+            <argument type="service" id="service_container" />
+        </service>
+        
+        <!-- - - - - - - - - - - - - - - - - - - - - -->
+        
+	</services>
+
+</container>

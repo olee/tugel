@@ -1,0 +1,23 @@
+{% extends 'bootstrap_3_layout.html.twig' %}
+{#% extends 'bootstrap_3_horizontal_layout.html.twig' %#}
+
+{# ######################################################### #}
+
+{% block button_widget -%}
+    {% set attr = attr|merge({class: (attr.class|default('') ~ ' btn-' ~ attr.type|default('primary'))|trim}) %}
+    {{- parent() -}}
+{%- endblock %}
+
+{# ######################################################### #}
+
+{% block form_widget_compound -%}
+    <div {{ block('widget_container_attributes') }} style="margin-left:15px;">
+        {%- if form.parent is empty -%}
+            {{ form_errors(form) }}
+        {%- endif -%}
+        {{- block('form_rows') -}}
+        {{- form_rest(form) -}}
+    </div>
+{%- endblock form_widget_compound %}
+
+{# ######################################################### #}

@@ -1,0 +1,49 @@
+<div role="navigation" class="navbar uncollapsed navbar-default">
+	<div class="container">
+		<div class="navbar-header">
+			{% spaceless %}
+			<button data-target=".navbar-collapse" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
+				<span class="sr-only">{{ 'Toggle navigation' }}</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			{% endspaceless %}
+			
+			<a href="{{ path('home') }}" class="navbar-brand">{{ 'Tugel' }}</a>
+		</div>
+		<div class="navbar-collapse collapse" style="height: 1px;">
+			{% spaceless %}
+			<ul class="nav navbar-nav">
+				{% if searchForm is defined and not hideNavbarSearch is defined %}
+				<li>
+					{{ form_start(searchForm, {attr:{class:'navbar-nav navbar-form', style:'max-width:490px;'}}) }}
+						<div class="input-group">
+							{{ form_widget(searchForm.q, {id:'search_input', attr:{class:'form-control', style:'min-width:215px;'}}) }}
+							<div class="input-group-btn">
+								{{ form_widget(searchForm.submit, {attr:{class:''}}) }}
+							</div>
+						</div>
+					{{ form_end(searchForm) }}
+				</li>
+				{% endif %}
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+				{% set currentRoute = app.request.get('_route') %}
+				{% set navigation = {
+					stats: {label:'Statistics'},
+					about: {label:'About'},
+				} %}
+				{% if app.user is not empty and is_granted("ROLE_ADMIN") %}
+					{% set navigation = navigation|merge({
+						admin_config: 'navigation.administration'|trans,
+					}) %}
+				{% endif %}
+				{% for route,data in navigation %}
+					<li {{ currentRoute == route ? 'class="active"' : '' }}><a href="{{ path(route, data.args is defined ? data.args : {}) }}">{{ data.label }}</a></li>
+				{% endfor %}
+			</ul>
+			{% endspaceless %}
+		</div>
+	</div>
+</div>

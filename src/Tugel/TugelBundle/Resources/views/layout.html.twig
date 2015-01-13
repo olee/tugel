@@ -1,0 +1,60 @@
+{% extends '::base.html.twig' %}
+
+{% block meta_title 'Tugel search' %}
+
+{% block html_attr app.environment == 'dev' ? 'class="dev"' : '' %}
+
+{% block header %}
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="author" content="Björn Tugel">
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block stylesheets %}
+{% stylesheets
+		'bundles/tugel/bootstrap/css/bootstrap.min.css'
+		'bundles/tugel/css/bootstrap-style.less'
+		'bundles/tugel/css/style.less'
+		output='css/styles.css'
+		filter='cssrewrite'
+		filter='?yui_css' %}
+	<link href="{{ asset_url }}" rel="stylesheet">
+{% endstylesheets %}
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block header_js %}
+{% javascripts 
+		'bundles/tugel/js/lib/jquery-1.11.0.min.js'
+		'bundles/tugel/js/lib/purl.min.js'
+		'bundles/tugel/js/setupFormCollection.js'
+		'bundles/tugel/bootstrap/js/bootstrap.min.js'
+		output='js/lib.js'
+		filter='?yui_js' %}
+	<script src="{{ asset_url }}"></script>
+{% endjavascripts %}
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block javascripts %}
+	{% javascripts 
+		'bundles/tugel/js/lib/jquery.placeholder.js'
+		output='js/postload_lib.js'
+		filter='?yui_js' %}
+		<script src="{{ asset_url }}"></script>
+	{% endjavascripts %}
+{% endblock %}
+
+{# ######################################################### #}
+
+{% block body %}
+
+{% block navbar %}{% include "@Tugel/navbar.html.twig" %}{% endblock %}
+
+{% block content %}
+{% endblock %}
+
+{% endblock %}

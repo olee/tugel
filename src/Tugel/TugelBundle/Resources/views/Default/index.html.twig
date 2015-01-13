@@ -1,0 +1,27 @@
+{% extends "@Tugel/layout.html.twig" %}
+
+{% block html_attr 'class="cover"' %}
+
+{% set hideNavbarSearch = true %}
+
+{% block content %}
+<div class="cover-wrapper" style="position:absolute; top:0; min-height: 300px;">
+  <div class="cover-wrapper-inner">
+  	
+<div style="align:center; text-align:center; margin:180px 0;">
+	<div style="max-width:290px; margin:auto;">
+		<h2>Tugel</h2>
+		{{ form_start(searchForm, {attr:{class:''}}) }}
+			<div class="input-group" style="width:100%;">
+				{{ form_widget(searchForm.q, {id:'search_input', attr:{class:'form-control', style:'min-width:215px;'}}) }}
+				<div class="input-group-btn">
+					{{ form_widget(searchForm.submit, {attr:{class:''}}) }}
+				</div>
+			</div>
+		{{ form_end(searchForm) }}
+	</div>
+</div>
+
+  </div>
+</div>
+{% endblock %}

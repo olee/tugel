@@ -18,8 +18,6 @@ fos_rest:
             html: true
         force_redirects:
             html: true
-#parameters:
-#    fos_rest.routing.loader.reader.action.class: ssko\TokitimeBundle\FOSRestBundle\RestActionReader
             
 sensio_framework_extra:
     view:    { annotations: false }

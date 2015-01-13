@@ -26,18 +26,18 @@ framework:
     http_method_override: true
 
 monolog:
-    channels: ["ppint"]
+    channels: ["tugel"]
     handlers:
-        ppint:
+        tugel:
             type:     stream
             level:    info
-            path:     "%kernel.logs_dir%/ppint.log"
-            channels: ["ppint"]
+            path:     "%kernel.logs_dir%/tugel.log"
+            channels: ["tugel"]
             formatter: monolog.formatter.simple_line
-#        ppint_last:
+#        tugel_last:
 #            type:     stream
-#            path:     "%kernel.logs_dir%/ppint.last.log"
-#            channels: ["ppint"]
+#            path:     "%kernel.logs_dir%/tugel.last.log"
+#            channels: ["tugel"]
 #            formatter: monolog.formatter.simple_line
     
 # Twig Configuration
@@ -45,8 +45,7 @@ twig:
     debug:            "%kernel.debug%"
     strict_variables: "%kernel.debug%"
     form:
-        #resources: ['@sskoUtility/Form/default.html.twig']
-        resources: ['@ZeutzheimPpint/Form/default.html.twig']
+        resources: ['@Tugel/Form/bootstrap_3_layout.html.twig']
 
 # Assetic Configuration
 assetic:
