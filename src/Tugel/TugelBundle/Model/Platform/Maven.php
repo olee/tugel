@@ -20,7 +20,7 @@ class Maven extends AbstractPlatform {
 		$url = 'http://search.maven.org/remotecontent?filepath=' . str_replace('.', '/', $parts[0]) . '/' . $parts[1] . '/' . $package->getVersion() . '/' . $parts[1] . '-' . $package->getVersion() . '.jar';
 		$fn = $parts[1] . '.jar';
 		if (!$this->downloadFile($url, $path . $fn)) {
-			echo "Download failed: $url\n"; //exit;
+			//echo "Download failed: $url\n"; //exit;
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 		}
 		

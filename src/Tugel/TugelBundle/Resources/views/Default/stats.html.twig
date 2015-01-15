@@ -10,51 +10,55 @@
 		<div>Indexed package count: {{ platform.indexed_count }}</div>
 		<div>Error package count: {{ platform.error_count }}</div>
 		<h4>Last added:</h4>
-		<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-			<thead>
-				<tr>
-					<th style="width:66px;">ID</th>
-					<th style="width:250px;">Name</th>
-					<th style="width:150px;">Added date</th>
-					<th style="width:120px;">Latest version</th>
-					<th class="desc">Description</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for package in platform.last_added %}
-				<tr>
-					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
-					<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
-					<td>{{ package.version }}</td>
-					<td class="desc">{{ package.description|raw }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+		<div class="table-responsive">
+			<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
+				<thead>
+					<tr>
+						<th style="width:66px;">ID</th>
+						<th style="width:250px;">Name</th>
+						<th style="width:150px;">Added date</th>
+						<th style="width:120px;">Latest version</th>
+						<th class="desc">Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for package in platform.last_added %}
+					<tr>
+						<td>{{ package.id }}</td>
+						<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
+						<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
+						<td>{{ package.version }}</td>
+						<td class="desc">{{ package.description|raw }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
 		<h4>Last indexed:</h4>
-		<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-			<thead>
-				<tr>
-					<th style="width:66px;">ID</th>
-					<th style="width:250px;">Name</th>
-					<th style="width:150px;">Indexed date</th>
-					<th style="width:120px;">Latest version</th>
-					<th class="desc">Description</th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for package in platform.last_indexed %}
-				<tr>
-					<td>{{ package.id }}</td>
-					<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
-					<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
-					<td>{{ package.version }}</td>
-					<td class="desc">{{ package.description|raw }}</td>
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
+		<div class="table-responsive">
+			<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
+				<thead>
+					<tr>
+						<th style="width:66px;">ID</th>
+						<th style="width:250px;">Name</th>
+						<th style="width:150px;">Indexed date</th>
+						<th style="width:120px;">Latest version</th>
+						<th class="desc" style="min-width:100px;">Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for package in platform.last_indexed %}
+					<tr>
+						<td>{{ package.id }}</td>
+						<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
+						<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
+						<td>{{ package.version }}</td>
+						<td class="desc">{{ package.description|raw }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
 		<hr>
 	{% endfor %}
 </div>

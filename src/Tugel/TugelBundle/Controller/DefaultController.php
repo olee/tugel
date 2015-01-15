@@ -225,36 +225,46 @@ class DefaultController extends ControllerHelperNT {
 		);
 		
 		if (!empty($data['q'])) {
-			$query = $data['q'];
-			
-			if (preg_match('/platform:([^\\s]+)/i', $query, $matches)) {
-				$platform = $matches[1];
-				$query = str_replace($matches[0], '', $query);
-			} else {
-				$platform = null;
-			}
-			
-			if (preg_match('/language:([^\\s]+)/i', $query, $matches)) {
-				$language = $matches[1];
-				$query = str_replace($matches[0], '', $query);
-			} else {
-				$language = null;
-			}
+			$query = $this->getQueryData($data['q']);
 			
 			/**
 			 * @var PackageManager
 			 */
 			$pm = $this->get('tugel.package_manager');
-				
-			$searchResults = $pm->findPackages($platform, null, null, $language, $query);
-			$params['searchResults'] = $searchResults;
-			$params['lastQuery'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
-			$params['lastQueryTime'] = $pm->lastQueryTime;
-			$params['scores'] = array();
-			$params['percentScores'] = array();
-			foreach ($searchResults as $p) { $params['scores'][$p->getId()] = $p->_score; $params['percentScores'][$p->getId()] = $p->_percentScore; }
+			
+			$results = $pm->findPackages($query['platform'], null, null, $query['language'], $query['query']);
+			$params['results'] = $results;
+			$params['query'] = $query;
+			$params['el_query'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
+			$params['time'] = $pm->lastQueryTime;
 		}
 		return $params;
+	}
+		
+	/**
+	 * @Route("/search.json", name="search_json")
+	 */
+	public function searchJsonAction(Request $request) {
+		$data = $request->query->all();
+		if (empty($data['q'])) {
+			$result = array(
+				'success' => false,
+				'message' => 'Missing query',
+			); 
+		} else {
+			$query = $this->getQueryData($data['q']);
+			$pm = $this->get('tugel.package_manager');
+			$results = $pm->findPackages($query['platform'], null, null, $query['language'], $query['query']);
+			
+			$result = array(
+				'query' => $query,
+				'results' => $results,
+				'el_query' => $pm->lastQuery,
+			);
+		}
+		
+		$json = $this->container->get('serializer')->serialize($result, 'json', SerializationContext::create()->setGroups(array('Default'))->setSerializeNull(true));
+		return new Response($json, 200, array('Content-Type' => 'application/json'));
 	}
 	
 	public function getQueryData($rawQuery) {
@@ -280,32 +290,6 @@ class DefaultController extends ControllerHelperNT {
 			'platform' => $platform,
 			'language' => $language,
 		);
-	}
-	
-	/**
-	 * @Route("/search.json", name="search_json")
-	 */
-	public function searchJsonAction(Request $request) {
-		$data = $request->query->all();
-		if (empty($data['q'])) {
-			$result = array(
-				'success' => false,
-				'message' => 'Missing query',
-			); 
-		} else {
-			$query = $this->getQueryData($data['q']);
-			$pm = $this->get('tugel.package_manager');
-			$results = $pm->findPackages($query['platform'], null, null, $query['language'], $query['query']);
-			
-			$result = array(
-				'query' => $query,
-				'results' => $results,
-				'el_query' => $pm->lastQuery,
-			);
-		}
-		
-		$json = $this->container->get('serializer')->serialize($result, 'json', SerializationContext::create()->setGroups(array('Default'))->setSerializeNull(true));
-		return new Response($json, 200, array('Content-Type' => 'application/json'));
 	}
 
 	/**
@@ -338,8 +322,8 @@ class DefaultController extends ControllerHelperNT {
 			$count = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->getQuery()->getSingleScalarResult();
 			$indexedCount = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.version IS NOT NULL')->andWhere('pkg.error IS NULL')->getQuery()->getSingleScalarResult();
 			$errorCount = (int)$packageRepo->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.error IS NOT NULL')->getQuery()->getSingleScalarResult();
-			$lastAdded = $packageRepo->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.addedDate', 'DESC')->setMaxResults(12)->getQuery()->getResult();
-			$lastIndexed = $packageRepo->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(12)->getQuery()->getResult();
+			$lastAdded = $packageRepo->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.addedDate', 'DESC')->setMaxResults(4)->getQuery()->getResult();
+			$lastIndexed = $packageRepo->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(8)->getQuery()->getResult();
 
 			$platformData[$platform->getName()] = array(
 				'count' => $count,
