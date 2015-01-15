@@ -15,7 +15,7 @@ use Tugel\TugelBundle\Entity\Package;
 
 class Maven extends AbstractPlatform {
 
-	public function doDownload(Package $package, $path, $version) {
+	protected function doDownload(Package $package, $path) {
 		$parts = preg_split('/:/', $package->getName());
 		$url = 'http://search.maven.org/remotecontent?filepath=' . str_replace('.', '/', $parts[0]) . '/' . $parts[1] . '/' . $package->getVersion() . '/' . $parts[1] . '-' . $package->getVersion() . '.jar';
 		$fn = $parts[1] . '.jar';
@@ -28,11 +28,6 @@ class Maven extends AbstractPlatform {
 			echo "Extraction failed\n"; //exit;
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 		}
-		
-		exit;
-		
-		// http://search.maven.org/remotecontent?filepath=com/github/xuwei-k/msgpack4z-api/0.1.0/msgpack4z-api-0.1.0-javadoc.jar
-		return AbstractPlatform::ERR_NEEDS_REINDEXING;
 	}
 
 	//*******************************************************************
@@ -63,7 +58,7 @@ class Maven extends AbstractPlatform {
 		return 'http://search.maven.org/#artifactdetails|' . $parts[0] . '|' . $parts[1] . '|' . $package->getVersion() . '|';
 	}
 
-	public function getPackageData(Package $package) {
+	protected function doGetPackageData(Package $package) {
 		$parts = preg_split('/:/', $package->getName());
 		$url = 'http://search.maven.org/solrsearch/select?q=g:' . $parts[0] . '%20AND%20a:' . $parts[1] . '&wt=json';
 		$json = $this->httpGet($url);

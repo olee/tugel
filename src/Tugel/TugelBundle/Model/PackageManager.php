@@ -233,7 +233,7 @@ EOM;
 
 		$this->getLogger()->info('> downloading \'' . $version->getName() . '\' of \'' . $package->getName() . '\' from platform \'' . $platform->getName() . '\' ');
 
-		if ($platform->downloadPackage($version, $path, $version)) {
+		if ($platform->download($version, $path, $version)) {
 			$this->getLogger()->info('> finished downloading version');
 			return true;
 		} else {
@@ -263,7 +263,7 @@ EOM;
 		return $this->findPackages(null, $index['namespace'], $index['class'], $index['language'], $index['tag']);
 	}
 
-	public function findPackages($platform = null, $namespaces = null, $classes = null, $languages = null, $codetags = null, $newTags = false) {
+	public function findPackages($platform = null, $namespaces = null, $classes = null, $languages = null, $codetags = null) {
 		if ($this->stopwatch)
 			$this->stopwatch->start('package_search');
 		
@@ -302,34 +302,9 @@ EOM;
 		}
 		
 		if (!empty($codetags)) {
-			if ($newTags) {
-				$match = new ESQ\Match();
-				$match->setFieldQuery('codeTagsText', $codetags);
-				$query->addMust($match);
-			} else {
-				// Prepare terms
-				preg_match_all(Utils::CAMEL_CASE_PATTERN, $codetags, $matches);
-				$terms = $matches[0];
-				foreach ($terms as &$value)
-					$value = strtolower($value);
-				if (count($terms) > 0) {
-					$termsQuery = new ESF\Terms();
-					$termsQuery->setTerms('codeTags.name', $terms);
-					
-					$useStaticScript = false;
-					$script = $useStaticScript ? 'query-codeTags' : str_replace("\t", '', str_replace("\n", ' ', str_replace("\r", '', PackageManager::CODE_TAG_SCRIPT)));
-					
-					$maxCodeTagCount = (int) $this->packageRepository->createQueryBuilder('pkg')->select('MAX(pkg.codeTagsMaximum)')->getQuery()->getSingleScalarResult();
-								
-					$functionQuery = new ESQ\FunctionScore();
-					$functionQuery->setScoreMode('sum');
-					$functionQuery->setBoostMode('replace');
-					$functionQuery->addFunction('script_score', array('script' => $script, 'params' => array('terms' => $terms, 'codeTagsMaximum' => $maxCodeTagCount)));
-					$functionQuery->setFilter($termsQuery);
-					
-					$query->addMust($functionQuery);
-				}
-			}
+			$match = new ESQ\Match();
+			$match->setFieldQuery('codeTagsText', $codetags);
+			$query->addMust($match);
 		}
 		
 		$query = \Elastica\Query::create($query);

@@ -246,44 +246,65 @@ class DefaultController extends ControllerHelperNT {
 			 */
 			$pm = $this->get('tugel.package_manager');
 				
-			$searchResults = $pm->findPackages($platform, null, null, $language, $query, true);
+			$searchResults = $pm->findPackages($platform, null, null, $language, $query);
 			$params['searchResults'] = $searchResults;
 			$params['lastQuery'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
 			$params['lastQueryTime'] = $pm->lastQueryTime;
 			$params['scores'] = array();
 			$params['percentScores'] = array();
 			foreach ($searchResults as $p) { $params['scores'][$p->getId()] = $p->_score; $params['percentScores'][$p->getId()] = $p->_percentScore; }
-
-			if ($this->get('kernel')->isDebug()) {
-				$searchResults = $pm->findPackages($platform, null, null, $language, $query);
-				$params['searchResults2'] = $searchResults;
-				$params['lastQuery2'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
-				$params['lastQueryTime2'] = $pm->lastQueryTime;
-				$params['scores2'] = array();
-				$params['percentScores2'] = array();
-				foreach ($searchResults as $p) { $params['scores2'][$p->getId()] = $p->_score; $params['percentScores2'][$p->getId()] = $p->_percentScore; }				
-			}
 		}
 		return $params;
 	}
+	
+	public function getQueryData($rawQuery) {
+		$query = $rawQuery;
 		
+		if (preg_match('/platform:([^\\s]+)/i', $query, $matches)) {
+			$platform = $matches[1];
+			$query = trim(str_replace($matches[0], '', $query));
+		} else {
+			$platform = null;
+		}
+		
+		if (preg_match('/language:([^\\s]+)/i', $query, $matches)) {
+			$language = $matches[1];
+			$query = trim(str_replace($matches[0], '', $query));
+		} else {
+			$language = null;
+		}
+		
+		return array(
+			'raw' => $rawQuery,
+			'query' => $query,
+			'platform' => $platform,
+			'language' => $language,
+		);
+	}
+	
 	/**
-	 * @Route("/search/json", name="search_json")
+	 * @Route("/search.json", name="search_json")
 	 */
 	public function searchJsonAction(Request $request) {
-		$args = $request->query->all();
-		if (count($args) == 0)
-			return null;
+		$data = $request->query->all();
+		if (empty($data['q'])) {
+			$result = array(
+				'success' => false,
+				'message' => 'Missing query',
+			); 
+		} else {
+			$query = $this->getQueryData($data['q']);
+			$pm = $this->get('tugel.package_manager');
+			$results = $pm->findPackages($query['platform'], null, null, $query['language'], $query['query']);
+			
+			$result = array(
+				'query' => $query,
+				'results' => $results,
+				'el_query' => $pm->lastQuery,
+			);
+		}
 		
-		$args = DefaultController::setArrayKeys($args, array('platform', 'namespaces', 'classes', 'languages', 'tags'));
-		$results = $this->get('tugel.package_manager')->findPackages($args['platform'], $args['namespaces'], $args['classes'], $args['languages'], $args['tags']);
-		$data = array(
-			'args' => $args,
-			'results' => $results,
-			'query' => $this->get('tugel.package_manager')->lastQuery,
-		);
-		
-		$json = $this->container->get('serializer')->serialize($data, 'json', SerializationContext::create()->setGroups(array('Default'))->setSerializeNull(true));
+		$json = $this->container->get('serializer')->serialize($result, 'json', SerializationContext::create()->setGroups(array('Default'))->setSerializeNull(true));
 		return new Response($json, 200, array('Content-Type' => 'application/json'));
 	}
 

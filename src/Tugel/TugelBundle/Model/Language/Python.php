@@ -7,7 +7,8 @@ use Tugel\TugelBundle\Util\Utils;
 
 class Python extends Language {
 		
-	public function analyzeProvide($src) {
+	public function analyzeProvide($path, $file) {
+		$src = file_get_contents($path . $file);
 		$index = array(
 			'tag' => array(),
 			'tag2' => array(),
@@ -39,7 +40,8 @@ class Python extends Language {
 		return $index;
 	}
 		
-	public function analyzeUse($src) {
+	public function analyzeUse($path, $file) {
+		$src = file_get_contents($path . $file);
 		/*
 		preg_match_all('@(?:^|\\s)import\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*)[^a-zA-Z\\d_$\\.]@', $src, $matches);
 		$namespaces = array();

@@ -13,9 +13,9 @@ use Tugel\TugelBundle\Entity\Package;
 
 class Hackage extends AbstractPlatform {
 
-	public function doDownload(Package $package, $path, $version) {
-		$fn = $package->getName() . '-' . $version . '.tar.gz';
-		$url = 'http://hackage.haskell.org/package/' . $package->getName() . '-' . $version . '/' . $fn;
+	protected function doDownload(Package $package, $path) {
+		$fn = $package->getName() . '-' . $package->getVersion() . '.tar.gz';
+		$url = 'http://hackage.haskell.org/package/' . $package->getName() . '-' . $package->getVersion() . '/' . $fn;
 
 		if (!$this->downloadFile($url, $path . $fn))
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
@@ -49,7 +49,7 @@ class Hackage extends AbstractPlatform {
 		return 'https://hackage.haskell.org/package/' . $package->getName();
 	}
 
-	public function getPackageData(Package $package) {
+	protected function doGetPackageData(Package $package) {
 		$src = $this->httpGet('https://hackage.haskell.org/package/' . $package->getName());
 		if ($src === false) {
 			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;

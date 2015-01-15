@@ -7,7 +7,8 @@ use Tugel\TugelBundle\Util\Utils;
 
 class Haskell extends Language {
 		
-	public function analyzeProvide($src) {
+	public function analyzeProvide($path, $file) {
+		$src = file_get_contents($path . $file);
 		$tags = array();
 		$tags2 = array();
 		
@@ -40,7 +41,8 @@ class Haskell extends Language {
 		);
 	}
 		
-	public function analyzeUse($src) {
+	public function analyzeUse($path, $file) {
+		$src = file_get_contents($path . $file);
 		preg_match_all('@(?:^|\\s)import\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*)[^a-zA-Z\\d_$\\.]@', $src, $matches);
 		$namespaces = array();
 		foreach ($matches[1] as $namespace)

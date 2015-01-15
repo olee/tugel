@@ -15,7 +15,7 @@ use Tugel\TugelBundle\Entity\Package;
 
 class Packagist extends AbstractPlatform {
 
-	public function doDownload(Package $package, $path, $version) {
+	protected function doDownload(Package $package, $path) {
 		if (isset($package->data['source'])) {
 			$url = $package->data['source'];
 			if (strpos($url, 'github.com')) {
@@ -39,6 +39,9 @@ class Packagist extends AbstractPlatform {
 			$this->getLogger()->debug('> checking out git repository ' . $url);
 			exec('git clone --no-checkout ' . escapeshellarg($url) . ' ' . escapeshellarg($path) . ' && cd ' . escapeshellarg($path) . 
 				' && git reset -q --hard ' . $package->data['git-reference'], $output, $success);
+			// Delete .git cache
+			if (file_exists($path . '.git/'))
+				exec('rm -rf ' . escapeshellarg($path . '.git/'));
 			if ($success !== 0)
 				return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 		} else 
@@ -67,7 +70,7 @@ class Packagist extends AbstractPlatform {
 		return 'https://packagist.org/packages/' . $package->getName();
 	}
 
-	public function getPackageData(Package $package) {
+	protected function doGetPackageData(Package $package) {
 		$json = $this->httpGet('https://packagist.org/packages/' . $package->getName() . '.json');
 		if ($json === false) {
 			// echo 'Error downloading data'; exit;

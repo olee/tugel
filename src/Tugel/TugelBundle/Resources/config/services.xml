@@ -21,6 +21,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<parameter key="tugel.language.class">Tugel\TugelBundle\Model\Language</parameter>
 		<parameter key="tugel.language.php.class">Tugel\TugelBundle\Model\Language\PHP</parameter>
 		<parameter key="tugel.language.java.class">Tugel\TugelBundle\Model\Language\Java</parameter>
+		<parameter key="tugel.language.javaclass.class">Tugel\TugelBundle\Model\Language\JavaClass</parameter>
 		<parameter key="tugel.language.haskell.class">Tugel\TugelBundle\Model\Language\Haskell</parameter>
 		<parameter key="tugel.language.python.class">Tugel\TugelBundle\Model\Language\Python</parameter>
 	</parameters>
@@ -63,7 +64,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<service id="tugel.platform.pypi" class="%tugel.platform.pypi.class%" parent="tugel.platform">
 			<tag name="tugel.platform" />
 		</service>
-		<service id="tugel.platform.maven" class="%tugel.platform.maven.class%" parent="tugel.platform">
+		<!-- --> <service id="tugel.platform.maven" class="%tugel.platform.maven.class%" parent="tugel.platform">
 			<tag name="tugel.platform" />
 		</service>
 
@@ -78,6 +79,9 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 			<tag name="tugel.language" />
 		</service>
 		<service id="tugel.language.java" class="%tugel.language.java.class%" parent="tugel.language">
+			<tag name="tugel.language" />
+		</service>
+		<service id="tugel.language.javaclass" class="%tugel.language.javaclass.class%" parent="tugel.language">
 			<tag name="tugel.language" />
 		</service>
 		<service id="tugel.language.haskell" class="%tugel.language.haskell.class%" parent="tugel.language">

@@ -2,66 +2,20 @@
 
 {% block content %}
 <div class="container">
-	
-{% if app.environment == 'dev' %}
-	<div class="row">
-		<div class="col-sm-6">
-{% if searchResults is defined %}
-			<ul>
-				{% for id,package in searchResults %}
-				<li>
-					<h4>
-						<span class="{{ percentScores[package.id] > 0.66 ? 'score_green' : (percentScores[package.id] > 0.5 ? 'score_orange' : 'score_red') }}" style="font-size:0.8em;">{{ scores[package.id]|number_format(3) }}</span>
-{% if percentScores2[package.id] is defined %}
-						<span class="{{ percentScores2[package.id] > 0.66 ? 'score_green' : (percentScores2[package.id] > 0.5 ? 'score_orange' : 'score_red') }}" style="font-size:0.8em;">{{ scores2[package.id]|number_format(3) }}</span>
-{% else %}
-						<span class="score_red" style="font-size:0.8em;">0.000</span>
-{% endif %}
-						<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
-					</h4>
-					<div>#{{ package.id }} platform:{{ package.platform.name }} - version:{{ package.version }}</div>
-					<p>{{ package.description[:250] ~ '...' }}</p>
-				</li>
-				{% endfor %}
-			</ul>
-			{% if app.environment == 'dev' %}<h4>Time: {{ lastQueryTime }}</h4><pre>{{ lastQuery }}</pre>{% endif %}
-{% endif %}
-		</div>
-		<div class="col-sm-6">
-{% if searchResults2 is defined %}
-			<ul>
-				{% for id,package in searchResults2 %}
-				<li>
-					<h4>
-						<span class="{{ percentScores2[package.id] > 0.66 ? 'score_green' : (percentScores2[package.id] > 0.5 ? 'score_orange' : 'score_red') }}" style="font-size:0.8em;">{{ scores2[package.id]|number_format(3) }}</span>
-{% if percentScores[package.id] is defined %}
-						<span class="{{ percentScores[package.id] > 0.66 ? 'score_green' : (percentScores[package.id] > 0.5 ? 'score_orange' : 'score_red') }}" style="font-size:0.8em;">{{ scores[package.id]|number_format(3) }}</span>
-{% else %}
-						<span class="score_red" style="font-size:0.8em;">0.000</span>
-{% endif %}
-						<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
-					</h4>
-					<div>#{{ package.id }} platform:{{ package.platform.name }} - version:{{ package.version }}</div>
-					<p>{{ package.description[:250] ~ '...' }}</p>
-				</li>
-				{% endfor %}
-			</ul>
-			{% if app.environment == 'dev' %}<h4>Time: {{ lastQueryTime2 }}</h4><pre>{{ lastQuery2 }}</pre>{% endif %}
-{% endif %}
-		</div>
-	</div>
-{% else %}
-			<ul>
-				{% for id,package in searchResults %}
-				<li>
-					<h4>
-						<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
-					</h4>
-					<div>platform:{{ package.platform.name }} - version:{{ package.version }}</div>
-					<p>{{ package.description[:250] ~ '...' }}</p>
-				</li>
-				{% endfor %}
-			</ul>
-{% endif %}
+	<ul>
+		{% for id,package in searchResults %}
+		<li>
+			<h4>
+				<span class="{{ percentScores[package.id] > 0.66 ? 'score_green' : (percentScores[package.id] > 0.5 ? 'score_orange' : 'score_red') }}" style="font-size:0.8em;">{{ scores[package.id]|number_format(3) }}</span>
+				<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
+			</h4>
+			<div>#{{ package.id }} platform:{{ package.platform.name }} - version:{{ package.version }}</div>
+			<p>{{ package.description[:250] ~ '...' }}</p>
+		</li>
+		{% endfor %}
+		<hr>
+		<p>Query time: {{ lastQueryTime }}</p>
+		{% if app.environment == 'dev' %}<pre>{{ lastQuery }}</pre>{% endif %}
+	</ul>
 </div>
 {% endblock %}

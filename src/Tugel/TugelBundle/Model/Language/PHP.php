@@ -37,7 +37,8 @@ class PHP extends Language {
 		return $indexer->index;
 	}
 
-	public function analyzeProvide($src) {
+	public function analyzeProvide($path, $file) {
+		$src = file_get_contents($path . $file);
 		if (PHP::FAST_INDEX) {
 			$tags2 = array();
 			$classes = array();
@@ -81,7 +82,8 @@ class PHP extends Language {
 		);
 	}
 
-	public function analyzeUse($src) {
+	public function analyzeUse($path, $file) {
+		$src = file_get_contents($path . $file);
 		$index = $this->parseAndIndex($src);
 		
 		$classNames = array();

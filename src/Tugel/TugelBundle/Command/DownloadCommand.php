@@ -29,7 +29,7 @@ class DownloadCommand extends ContainerAwareCommand {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		$tugel = $this->getContainer()->get('tugel.package_manager');
-		if ($tugel->downloadPackage($input->getArgument('platform'), $input->getArgument('package'), $input->getArgument('version'), $input->getArgument('path'))) {
+		if ($tugel->download($input->getArgument('platform'), $input->getArgument('package'), $input->getArgument('version'), $input->getArgument('path'))) {
 			$this->getContainer()->get('tugel.logger')->info("Successfully downloaded package.");
 		} else {
 			$this->getContainer()->get('tugel.logger')->info("Error while downloaded package!");

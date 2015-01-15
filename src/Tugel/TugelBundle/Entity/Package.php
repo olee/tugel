@@ -196,6 +196,10 @@ class Package {
 		return $this->platform->getPlatform()->getPackageUrl($this);
 	}
 
+	public function getCachePath() {
+		return WEB_DIRECTORY . '../tmp/' . $this->getPlatform()->getName() . '/' . str_replace(':', '_', $this->getName()) . '/';
+	}
+	
 	//*******************************************************************
 
 	/**

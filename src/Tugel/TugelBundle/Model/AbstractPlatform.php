@@ -23,7 +23,7 @@ use Tugel\TugelBundle\Util\Utils;
 abstract class AbstractPlatform {
 
 	const PLATFORM_STR_LEN = 12;
-	const PACKAGE_STR_LEN = 46;
+	const PACKAGE_STR_LEN = 52;
 	const VERSION_STR_LEN = 16;
 
 	const ERR_PACKAGE_NOT_FOUND = 1;
@@ -118,124 +118,123 @@ abstract class AbstractPlatform {
 		$this->getLogger()->notice('> finished crawling platform ' . $this->getName());
 	}
 
-	public function getCachePath(Package $package) {
-		$name = str_replace(':', '_', $package->getName());
-		$path = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $name . '/' . $package->getVersion() . '/';
-		if (!file_exists($path . 'tugel_repository'))
-			$path = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $name . '/';
-		return $path;
-	}
-
-	public function preparePath($path) {
-		if (PHP_OS == 'WINNT')
-			$path = '/' . str_replace(':', '', str_replace('\\', '/', $path));
-		return $path;
-	}
-
 	public function index(Package $package, $quick = false, $dry = false) {
 		if ($quick) {
-			if (!$package->getVersion() || !file_exists($this->getCachePath($package) . 'tugel_repository'))
+			if (!$package->getVersion() || !file_exists($package->getCachePath() . 'tugel_repository'))
 				$quick = false;
+			else
+				$package->data = array();
 		}
+
+		// Check package data
 		if (!$quick) {
-			// Load package-data
-			$this->log('Checking package data', $package, Logger::INFO);
-			$err = $this->getPackageData($package);
-			if ($err) {
-				$package->setError($err);
-				$this->log('Failed to get package data', $package, Logger::ERROR);
-				if ($dry)
-					$this->getEntityManager()->refresh($package);
+			if (!$this->getPackageData($package))
 				return false;
-			}
-
-			// Get description
-			if (array_key_exists('description', $package->data))
-				$package->setDescription($package->data['description']);
-
-			// Get package name if it's case-sensitive
-			if (array_key_exists('packagename', $package->data))
-				$package->setName($package->data['packagename']);
-
-			// Check if a version was found
-			if (!array_key_exists('version', $package->data) || !$package->data['version']) {
-				$this->log('No version found', $package, Logger::WARNING);
-				$package->setError(AbstractPlatform::ERR_VERSION_NOT_FOUND);
-				if ($dry)
-					$this->getEntityManager()->refresh($package);
-				return false;
-			}
-
 			// Check, if version is the same as the last one indexed (master-versions)
 			if (!$package->getError() && $package->getVersion() == $package->data['version']) {
 				if (!array_key_exists('version-ref', $package->data) || $package->data['version-ref'] == $package->getVersionReference()) {
-					$package->setNew(0);
-					if ($dry)
-						$this->getEntityManager()->refresh($package);
+					$this->log('Same version', $package, Logger::INFO);
+					if (!$dry)
+						$package->setNew(0);
 					return true;
 				}
 			}
 			$package->setVersion($package->data['version']);
-		} else {
-			$package->data = array();
 		}
 
-		$cachePath = $this->getCachePath($package);
-		$cacheIdFile = $cachePath . 'tugel_repository';
-
-		$cacheVersion = file_exists($cacheIdFile) ? file_get_contents($cacheIdFile) : false;
-		if (array_key_exists('version-ref', $package->data) && $package->data['version-ref'] != $package->getVersionReference()) {
-			$cacheVersion = false;
-			$package->setVersionReference($package->data['version-ref']);
-		}
-
-		if (!$quick &&  $cacheVersion != $package->getVersion()) {
+		// Download package data
+		$path = $package->getCachePath();
+		$cacheVersion = $this->getCacheVersion($package, $path);
+		if (!$quick && $cacheVersion != $package->getVersion()) {
 			// Prepare download directory
-			exec('rm -rf ' . escapeshellarg($cachePath));
-			mkdir($cachePath, 0777, true);
-
-			// Download package source
-			$this->log('Downloading package', $package, Logger::INFO);
-			if (!$this->downloadPackage($package, $cachePath)) {
+			exec('rm -rf ' . escapeshellarg($path));
+			mkdir($path, 0777, true);
+			if (!$this->download($package, $path)) {
 				if ($dry)
 					$this->getEntityManager()->refresh($package);
 				else
 					$this->getEntityManager()->flush();
 				return false;
 			}
-			// Delete .git cache
-			if (file_exists($cachePath . '.git/'))
-				exec('rm -rf ' . escapeshellarg($cachePath . '.git/'));
-
 			// Create cache-file
-			file_put_contents($cachePath . 'tugel_repository', $package->getVersion());
-		} else {
-			if ($cachePath == WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $package->getName() . '/' . $package->getVersion() . '/') {
-				$newCachePath = WEB_DIRECTORY . '../tmp/' . $package->getPlatform()->getName() . '/' . $package->getName() . '/';
-				$this->log('Moving cache to ' . $newCachePath, $package, Logger::INFO);
-				exec('mv ' . escapeshellarg($cachePath) . '* ' . escapeshellarg($newCachePath));
-				$cachePath = $newCachePath;
-			}
-			file_put_contents($cachePath . 'tugel_repository', $package->getVersion());
+			file_put_contents($path . 'tugel_repository', $package->getVersion());
+		}
+		
+		// Index package
+		$this->indexFiles($package, $path);
+		if ($dry)
+			$this->getEntityManager()->refresh($package);
+		else
+			$this->getEntityManager()->flush();
+		$this->log('indexed', $package, Logger::DEBUG);
+	}
+
+	public function getCacheVersion(Package $package, $cachePath) {
+		$cacheIdFile = $cachePath . 'tugel_repository';
+		$cacheVersion = file_exists($cacheIdFile) ? file_get_contents($cacheIdFile) : false;
+		if (array_key_exists('version-ref', $package->data) && $package->data['version-ref'] != $package->getVersionReference()) {
+			$cacheVersion = false;
+			$package->setVersionReference($package->data['version-ref']);
+		}
+		return $cacheVersion;
+	}
+	
+	public function getPackageData(Package $package) {
+		// Load package-data
+		$this->log('Checking package data', $package, Logger::INFO);
+		$err = $this->doGetPackageData($package);
+		if ($err) {
+			$package->setError($err);
+			$this->log('Failed to get package data', $package, Logger::ERROR);
+			return false;
 		}
 
+		// Get description
+		if (array_key_exists('description', $package->data))
+			$package->setDescription($package->data['description']);
+
+		// Get package name if it's case-sensitive
+		if (array_key_exists('packagename', $package->data))
+			$package->setName($package->data['packagename']);
+
+		// Check if a version was found
+		if (!array_key_exists('version', $package->data) || !$package->data['version']) {
+			$this->log('No version found', $package, Logger::WARNING);
+			$package->setError(AbstractPlatform::ERR_VERSION_NOT_FOUND);
+			return false;
+		}
+		return true;
+	}
+	
+	public function download(Package $package, $path) {
+		// Download package source
+		$this->log('Downloading package', $package, Logger::INFO);
+		$err = $this->doDownload($package, $path);
+		if ($err) {
+			$this->log('download error: ' . $this->ERROR_MESSAGES[$err], $package, Logger::ERROR);
+			$package->setError($err);
+			return false;
+		}
+		return true;
+	}
+
+	public function indexFiles(Package $package, $path) {
 		// Index files
 		$this->log('Indexing package', $package, Logger::INFO);
 		$i = 0;
 		$index = array();
-		$files = $this->recursiveScandir($cachePath);
+		$files = $this->recursiveScandir($path);
 		foreach ($files as $file) {
 			foreach ($this->getLanguageManager()->getLanguages() as $lang) {
 				if ($lang->checkFilename($file)) {
-					$this->log('Indexing ' . $file, $package, Logger::DEBUG);
-					$fileIndex = array($lang->getName() => $lang->analyzeProvide(file_get_contents($file)));
+					$fn = substr($file, strlen($path), strlen($file) - strlen($path));
+					$this->log('Indexing ' . $fn, $package, Logger::DEBUG);
+					$fileIndex = array($lang->getName() => $lang->analyzeProvide($path, $fn));
 					PackageManager::mergeIndex($index, $fileIndex);
 				}
 			}
 		}
-		// echo "\n\n"; print_r($index); exit;
 		$index = PackageManager::collapseIndex($index);
-		// echo "\n\n"; print_r($index); exit;
 
 		$package->setClasses(array_get($index, 'class'));
 		$package->setNamespaces(array_get($index, 'namespace'));
@@ -265,27 +264,12 @@ abstract class AbstractPlatform {
 		$package->setError(null);
 		$package->setNew(false);
 		$package->setIndexedDate(new \DateTime());
-		if ($dry)
-			$this->getEntityManager()->refresh($package);
-		$this->getEntityManager()->flush();
-
-		$this->log('indexed', $package, Logger::DEBUG);
-		return true;
 	}
 
 	public function clearIndex(Package $package) {
 		$package->setClasses(null);
 		$package->setNamespaces(null);
 		$package->setIndexed(null);
-	}
-
-	public function downloadPackage(Package $package, $path, $version = null) {
-		$err = $this->doDownload($package, $path, $version ? $version : $package->getVersion());
-		if (!$err)
-			return true;
-		$this->log('download error: ' . $this->ERROR_MESSAGES[$err], $package, Logger::ERROR);
-		$package->setError($err);
-		return false;
 	}
 
 	public function log($msg, $obj = null, $logLevel = Logger::INFO) {
@@ -310,9 +294,9 @@ abstract class AbstractPlatform {
 
 	public abstract function getMasterVersion();
 
-	public abstract function getPackageData(Package $package);
+	protected abstract function doGetPackageData(Package $package);
 
-	public abstract function doDownload(Package $package, $path, $version);
+	protected abstract function doDownload(Package $package, $path);
 
 	public abstract function getPackageUrl(Package $package);
 
@@ -405,6 +389,12 @@ abstract class AbstractPlatform {
 
 	public function strEndsWith($haystack, $needle) {
 		return strcasecmp(substr($haystack, strlen($haystack) - strlen($needle), strlen($needle)), $needle) == 0;
+	}
+
+	public function preparePath($path) {
+		if (PHP_OS == 'WINNT')
+			$path = '/' . str_replace(':', '', str_replace('\\', '/', $path));
+		return $path;
 	}
 
 	public function extractArchive($path, $fn, $deleteAfter = false) {

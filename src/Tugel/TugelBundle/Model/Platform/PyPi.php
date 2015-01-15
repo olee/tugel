@@ -22,7 +22,7 @@ function endsWith($haystack, $needle) {
 
 class PyPi extends AbstractPlatform {
 
-	public function doDownload(Package $package, $path, $version) {
+	protected function doDownload(Package $package, $path) {
 		if (empty($package->data['downloadurl']))
 			return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
 		
@@ -63,7 +63,7 @@ class PyPi extends AbstractPlatform {
 		return 'https://pypi.python.org/pypi/' . $package->getName();
 	}
 
-	public function getPackageData(Package $package) {
+	protected function doGetPackageData(Package $package) {
 		$json = $this->httpGet('https://pypi.python.org/pypi/' . $package->getName() . '/json');
 		if ($json === false) {
 			// echo 'Error downloading data'; exit;
