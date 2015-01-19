@@ -141,6 +141,11 @@ EOM;
 			if ($package) {
 				if (!is_object($package))
 					$package = $indexPlatform->getPackage($package);
+				if (!$package) {
+					$this->log('package not found', $indexPlatform ? $indexPlatform->getPlatformEntity() : null, Logger::ERROR);
+					return false;
+				}
+				$package->setError(AbstractPlatform::ERR_NEEDS_REINDEXING);
 				return $indexPlatform->index($package, $quick, $dry);
 			}
 		}
@@ -468,7 +473,7 @@ EOM;
 		);
 		foreach ($index as $lang => $types) {
 			foreach ($types as $type => $identifiers) {
-				if ($type == 'tag') {
+				if ($type == 'tags') {
 					if (!array_key_exists($type, $result))
 						$result[$type] = array();
 					foreach ($identifiers as $identifier => $count) {

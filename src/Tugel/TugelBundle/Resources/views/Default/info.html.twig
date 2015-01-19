@@ -1,0 +1,22 @@
+{% extends "TugelBundle::layout.html.twig" %}
+
+{% block content %}
+<div class="container">
+	<h2><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></h2>
+	<h3>Platform: {{ package.platform.name }}</h3>
+	<h4>Languages: {{ package.languages }}</h4>
+	<h4>Version: {{ package.version }}</h4> 
+	<h3>Description</h3>
+	<p>{{ package.description is empty ? 'No description available' : package.description }}</p>
+	<h3>Tags:</h3>
+	<ul>
+	{% for tag in package.codeTags %}
+		<li>{{ (tag.count * package.codeTagsMaximum)|round }} - {{ tag.name }}
+	{% endfor %}
+		<li>-----------------------------------------------</li>
+	{% for tag in package.codeTagsText|split(' ')|sort %}
+		<li>{{ tag }}
+	{% endfor %}
+	</ul>
+</div>
+{% endblock %}

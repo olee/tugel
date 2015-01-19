@@ -21,9 +21,9 @@ abstract class Language {
 
 	//*******************************************************************
 
-	public abstract function analyzeProvide($path, $file);
+	public abstract function analyzeProvide(Index $index, $path, $file);
 
-	public abstract function analyzeUse($path, $file);
+	public abstract function analyzeUse(Index $index, $path, $file);
 
 	public abstract function getName();
 

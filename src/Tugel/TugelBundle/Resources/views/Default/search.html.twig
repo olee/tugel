@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container">
-	{% set q = 'package ' ~ query.platform ~ ' ' ~ query.query %}
+	{% set q = 'library ' ~ (query.platform ? query.platform ~ ' ' : '') ~ (query.language ? query.language ~ ' ' : '') ~ query.query %}
 	{% set q = q|url_encode %}
 	<div style="font-weight:bold;"> |
 		<a target="_blank" href="http://google.com/search?q={{ q }}">Google</a> |
@@ -17,13 +17,14 @@
 		<li>
 			<h4>
 				<span class="pkg_score {{ package._percentScore > 0.66 ? 'score_green' : (package._percentScore > 0.5 ? 'score_orange' : 'score_red') }}">{{ package._score|number_format(3) }}</span>
-				<a target="_blank" href="{{ package.url }}">{{ package.name }}</a>
+				<a target="_blank" href="{{ path('info', {id:package.id}) }}">{{ package.name }}</a>
+				<a href="{{ package.url }}"><span class="glyphicon glyphicon-link"> </span></a>
 			</h4>
 			<div>
 				<span class="pkg_id">{{ package.id }}</span>
 				<span class="pkg_platform">{{ package.platform.name }}</span>
 				<span class="pkg_version">{{ package.version }}</span> 
-				<a class="pkg_google" target="_blank" href="http://google.com/search?q={{ package.name|url_encode }}">G</a>
+				<a class="pkg_google" target="_blank" href="https://google.com/search?q={{ package.name|replace({'com.':'', '.': ' ', ':': ' ', '-': ' '})|url_encode }}">G</a>
 			</div>
 			<p>{{ package.description[:250] ~ '...' }}</p>
 		</li>

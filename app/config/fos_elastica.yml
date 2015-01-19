@@ -3,7 +3,7 @@ fos_elastica:
         default: { host: localhost, port: 9200 }
     indexes:
         search:
-            index_name: ppint
+            index_name: tugel
             settings:
                 index:
                     analysis:

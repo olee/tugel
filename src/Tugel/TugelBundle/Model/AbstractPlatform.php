@@ -161,12 +161,19 @@ abstract class AbstractPlatform {
 		}
 		
 		// Index package
-		$this->indexFiles($package, $path);
+		$this->indexFiles($package, $path, $dry);
+		
+		$package->setError(null);
+		$package->setNew(false);
+		$package->setIndexedDate(new \DateTime());
+		
 		if ($dry)
 			$this->getEntityManager()->refresh($package);
 		else
 			$this->getEntityManager()->flush();
 		$this->log('indexed', $package, Logger::DEBUG);
+		
+		return true;
 	}
 
 	public function getCacheVersion(Package $package, $cachePath) {
@@ -218,30 +225,39 @@ abstract class AbstractPlatform {
 		return true;
 	}
 
-	public function indexFiles(Package $package, $path) {
+	public function indexFiles(Package $package, $path, $dry = false) {
+		$index = new Index();
+		
 		// Index files
 		$this->log('Indexing package', $package, Logger::INFO);
 		$i = 0;
-		$index = array();
 		$files = $this->recursiveScandir($path);
 		foreach ($files as $file) {
 			foreach ($this->getLanguageManager()->getLanguages() as $lang) {
 				if ($lang->checkFilename($file)) {
 					$fn = substr($file, strlen($path), strlen($file) - strlen($path));
 					$this->log('Indexing ' . $fn, $package, Logger::DEBUG);
-					$fileIndex = array($lang->getName() => $lang->analyzeProvide($path, $fn));
-					PackageManager::mergeIndex($index, $fileIndex);
+					$index->addLanguage($lang->getName());
+					$lang->analyzeProvide($index, $path, $fn);
 				}
 			}
 		}
-		$index = PackageManager::collapseIndex($index);
+		
+		if ($dry)
+			return;
 
-		$package->setClasses(array_get($index, 'class'));
-		$package->setNamespaces(array_get($index, 'namespace'));
-		$package->setLanguages(array_get($index, 'language'));
-		$package->setCodeTagsText(array_get($index, 'tag2'));
-		if (array_key_exists('tag', $index)) {
-			$tags = $index['tag'];
+		// Save index
+		$package->setClasses($index->getClassesString());
+		$package->setNamespaces($index->getNamespacesString());
+		$package->setLanguages($index->getLanguagesString());
+		$package->setCodeTagsText($index->getTagsString());
+		
+		{
+			$tags = array();
+			preg_match_all(Utils::CAMEL_CASE_PATTERN, $index->getTagsString(), $matches);
+			foreach ($matches[0] as $tag) {
+				Utils::array_add($tags, strtolower($tag));
+			}
 
 			$max = 0;
 			foreach ($tags as $count)
@@ -259,11 +275,9 @@ abstract class AbstractPlatform {
 					// $this->getEntityManager()->remove($tag);
 				}
 			}
+			foreach ($tags as $tag => $count)
+				$package->addCodeTag(new CodeTag($package, $tag, $count));
 		}
-		
-		$package->setError(null);
-		$package->setNew(false);
-		$package->setIndexedDate(new \DateTime());
 	}
 
 	public function clearIndex(Package $package) {
@@ -409,7 +423,8 @@ abstract class AbstractPlatform {
 	}
 
 	public function extractTarZip($path, $fn, $deleteAfter = false) {
-		$cmd = 'tar -xzof ' . escapeshellarg($this->preparePath($path) . $fn) . ' --strip-components=1 -C ' . escapeshellarg($this->preparePath($path)) . ' && chmod -Rf 775 ' . escapeshellarg($this->preparePath($path));
+		$path = $this->preparePath($path);
+		$cmd = 'tar -xzof ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && chmod -Rf 775 ' . escapeshellarg($path);
 		exec($cmd, $output, $success);
 		if ($deleteAfter)
 			$this->deleteFile($path, $fn);
@@ -417,7 +432,8 @@ abstract class AbstractPlatform {
 	}
 
 	public function extractTarBz2($path, $fn, $deleteAfter = false) {
-		$cmd = 'tar -xjof ' . escapeshellarg($this->preparePath($path) . $fn) . ' --strip-components=1 -C ' . escapeshellarg($this->preparePath($path)) . ' && chmod -Rf 775 ' . escapeshellarg($this->preparePath($path));
+		$path = $this->preparePath($path);
+		$cmd = 'tar -xjof ' . escapeshellarg($path . $fn) . ' --strip-components=1 -C ' . escapeshellarg($path) . ' && chmod -Rf 775 ' . escapeshellarg($path);
 		exec($cmd, $output, $success);
 		if ($deleteAfter)
 			$this->deleteFile($path, $fn);
@@ -425,7 +441,8 @@ abstract class AbstractPlatform {
 	}
 
 	public function extractZip($path, $fn, $deleteAfter = false) {
-		$cmd = 'unzip -o -d ' . escapeshellarg($path) . ' ' . escapeshellarg($path . $fn);
+		$path = $this->preparePath($path);
+		$cmd = 'unzip -o -d ' . escapeshellarg($path) . ' ' . escapeshellarg($path . $fn) . ' && chmod -R 775 ' . escapeshellarg($path);
 		exec($cmd, $output, $success);
 		if ($deleteAfter)
 			$this->deleteFile($path, $fn);
