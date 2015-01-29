@@ -27,10 +27,11 @@
 
 {% block header_js %}
 {% javascripts 
-		'bundles/tugel/js/lib/jquery-1.11.0.min.js'
+		'bundles/tugel/js/lib/jquery-1.11.0.js'
 		'bundles/tugel/js/lib/purl.min.js'
 		'bundles/tugel/js/setupFormCollection.js'
-		'bundles/tugel/bootstrap/js/bootstrap.min.js'
+		'bundles/tugel/bootstrap/js/bootstrap.js'
+		'bundles/tugel/js/accordion.js'
 		output='js/lib.js'
 		filter='?yui_js' %}
 	<script src="{{ asset_url }}"></script>

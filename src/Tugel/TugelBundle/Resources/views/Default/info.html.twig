@@ -5,18 +5,77 @@
 	<h2><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></h2>
 	<h3>Platform: {{ package.platform.name }}</h3>
 	<h4>Languages: {{ package.languages }}</h4>
-	<h4>Version: {{ package.version }}</h4> 
-	<h3>Description</h3>
-	<p>{{ package.description is empty ? 'No description available' : package.description }}</p>
-	<h3>Tags:</h3>
-	<ul>
-	{% for tag in package.codeTags %}
-		<li>{{ (tag.count * package.codeTagsMaximum)|round }} - {{ tag.name }}
-	{% endfor %}
-		<li>-----------------------------------------------</li>
-	{% for tag in package.codeTagsText|split(' ')|sort %}
-		<li>{{ tag }}
-	{% endfor %}
-	</ul>
+	<h4>Version: {{ package.version }}</h4>
+{% if package.license is not empty %}
+	<h4>License: {{ package.license }}</h4>
+{% endif %}
+
+	<div class="panel-group accordion" id="accordion" role="tablist" aria-multiselectable="true">
+		<div class="panel panel-default">
+			<a class="panel-heading" role="tab" id="descriptionHeading">
+				<h4 class="panel-title">Description</h4>
+			</a>
+			<div id="description" class="panel-collapse collapse in" role="tabpanel">
+				<div class="panel-body">
+					{{ package.description is empty ? 'No description available' : package.description }}
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<a class="panel-heading" role="tab" id="dependenciesHeading">
+    			<span class="badge">{{ package.dependencies|length }}</span>
+				<h4 class="panel-title">Dependencies</h4>
+			</a>
+			<div id="dependencies" class="panel-collapse collapse" role="tabpanel">
+				<div class="panel-body">
+					<ul>
+						{% for pkg in package.dependencies %}
+						<li>
+							<a href="{{ path('info', {id:pkg.id}) }}">{{ pkg.name }}</a>
+							{% endfor %}
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<a class="panel-heading" role="tab" id="dependencyOfHeading">
+    			<span class="badge">{{ package.dependencyOf|length }}</span>
+				<h4 class="panel-title">Dependency of</h4>
+			</a>
+			<div id="dependency-of" class="panel-collapse collapse" role="tabpanel">
+				<div class="panel-body">
+					<ul>
+						{% for pkg in package.dependencyOf %}
+						<li>
+							<a href="{{ path('info', {id:pkg.id}) }}">{{ pkg.name }}</a>
+							{% endfor %}
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<a class="panel-heading" role="tab" id="tagsHeading">
+    			<span class="badge">{{ package.codeTags|length }}</span>
+				<h4 class="panel-title">Tags</h4>
+			</a>
+			<div id="tags" class="panel-collapse collapse" role="tabpanel">
+				<div class="panel-body">
+					<ul>
+						{% for tag in package.codeTags %}
+						<li>
+							{{ (tag.count * package.codeTagsMaximum)|round }} - {{ tag.name }}
+							{#% endfor %}
+						<li>
+							-----------------------------------------------
+						</li>
+						{% for tag in package.codeTagsText|split(' ')|sort %}
+						<li>
+							{{ tag }#}
+							{% endfor %}
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock %}

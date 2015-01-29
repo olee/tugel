@@ -47,6 +47,10 @@ class PyPi extends AbstractPlatform {
 		return 'pypi';
 	}
 
+	public function isCaseInsensitive() {
+		return true;
+	}
+
 	public function getCrawlUrl() {
 		return 'https://pypi.python.org/pypi?%3Aaction=rss';
 	}

@@ -202,20 +202,49 @@ class DefaultController extends ControllerHelperNT {
 			return $queryFormResult;
 		
 		if (!empty($data['q'])) {
-			$query = $this->getQueryData($data['q']);
-			
 			$pm = $this->getPackageManager();
-			$results = $pm->findPackages($query['platform'], null, null, $query['language'], $query['query']);
+			$query = $pm->parseQuery($data['q']);
+			$results = $pm->find($query, 10, $request->query->get('page', 0) * 10);
+			
 			$params['results'] = $results;
 			$params['query'] = $query;
 			$params['el_query'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
 			$params['time'] = $pm->lastQueryTime;
 		}
-		return $params;
+		return $this->render('TugelBundle:Default:search.html.twig', $params);
 	}
 	
 	/**
-	 * @Route("/info/{id}", name="info")
+	 * @Route("/search/{platform}", name="search_platform")
+	 * @Template()
+	 */
+	public function searchPlatformAction(Request $request, $platform) {
+		$data = $request->query->all();
+		$form = $this->createForm(new SimpleSearchType(), $data);
+		$params = array('searchForm' => $form->createView());
+		$queryFormResult = $this->handleQueryForm($request, $form);
+		if ($queryFormResult)
+			return $queryFormResult;
+		
+		if (empty($data['q']))
+			$params['query'] = array('platform' => $platform);
+		
+		if (!empty($data['q'])) {
+			$pm = $this->getPackageManager();
+			$query = $pm->parseQuery($data['q']);
+			$query['platform'] = $platform;
+			$results = $pm->find($query, 10, $request->query->get('page', 0) * 10);
+			
+			$params['results'] = $results;
+			$params['query'] = $query;
+			$params['el_query'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
+			$params['time'] = $pm->lastQueryTime;
+		}
+		return $this->render('TugelBundle:Default:search.html.twig', $params);
+	}
+	
+	/**
+	 * @Route("/info/{id}", name="info", requirements={"id"="\d+"})
 	 * @Template()
 	 */
 	public function infoAction(Request $request, $id = null) {
@@ -235,6 +264,30 @@ class DefaultController extends ControllerHelperNT {
 		$params['package'] = $package;
 		return $params;
 	}
+		
+	/**
+	 * @Route("/info/{platform}/{package}", name="info_named", requirements={"package"=".*"})
+	 * @Template()
+	 */
+	public function infoNamedAction(Request $request, $platform, $package) {
+		//echo "$platform\n$package\n"; exit;
+		if ($platform == null || $package == null)
+			return $this->redirect($this->generateUrl('home'));
+		
+		$platform = $this->getPackageManager()->getPlatformManager()->getPlatform($platform);
+		$pkg = $platform->getPackage($package);
+		if (!$pkg)
+			return $this->redirect($this->generateUrl('home'));
+		
+		$form = $this->createForm(new SimpleSearchType());
+		$params = array('searchForm' => $form->createView());
+		$queryFormResult = $this->handleQueryForm($request, $form);
+		if ($queryFormResult)
+			return $queryFormResult;
+		
+		$params['package'] = $pkg;
+		return $this->render('TugelBundle:Default:info.html.twig', $params);
+	}
 	
 	/**
 	 * @Route("/search.json", name="search_json")
@@ -247,9 +300,9 @@ class DefaultController extends ControllerHelperNT {
 				'message' => 'Missing query',
 			); 
 		} else {
-			$query = $this->getQueryData($data['q']);
-			$pm = $this->get('tugel.package_manager');
-			$results = $pm->findPackages($query['platform'], null, null, $query['language'], $query['query']);
+			$pm = $this->getPackageManager();
+			$query = $pm->parseQuery($data['q']);
+			$results = $pm->find($query, 10, $request->query->get('page', 0) * 10);
 			
 			$result = array(
 				'query' => $query,
@@ -313,31 +366,6 @@ class DefaultController extends ControllerHelperNT {
 		return new Response($html);
 	}
 	
-	public function getQueryData($rawQuery) {
-		$query = $rawQuery;
-		
-		if (preg_match('/platform:([^\\s]+)/i', $query, $matches)) {
-			$platform = $matches[1];
-			$query = trim(str_replace($matches[0], '', $query));
-		} else {
-			$platform = null;
-		}
-		
-		if (preg_match('/language:([^\\s]+)/i', $query, $matches)) {
-			$language = $matches[1];
-			$query = trim(str_replace($matches[0], '', $query));
-		} else {
-			$language = null;
-		}
-		
-		return array(
-			'raw' => $rawQuery,
-			'query' => $query,
-			'platform' => $platform,
-			'language' => $language,
-		);
-	}
-
 	public function getPlatformData() {
 		/**
 		 * @var EntityRepository

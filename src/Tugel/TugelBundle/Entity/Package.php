@@ -14,7 +14,8 @@ use Tugel\TugelBundle\Model\AbstractPlatform;
  * @ORM\Table(
  * 		name = "package",
  * 		options = {"collate" = "utf8_bin"},
- * 		uniqueConstraints = { @ORM\UniqueConstraint(name = "package_unique", columns = {"platform_id", "name"})})
+ * 		uniqueConstraints = { @ORM\UniqueConstraint(name = "package_unique", columns = {"platform_id", "name"})}
+ * )
  */
 class Package {
 
@@ -44,21 +45,26 @@ class Package {
 	private $name;
 
 	/**
-	 * @var string
-	 *
-	 * @ORM\Column(name="description", type="string", length=1024, nullable=true)
-	 * @JMS\Groups({"details", "description"})
-	 */
-	private $description;
-
-	/**
 	 * @var \DateTime
 	 *
 	 * @ORM\Column(name="added_date", type="datetime", nullable=false)
 	 */
 	private $addedDate;
 
-	//*******************************************************************
+	/**
+	 * @var \DateTime
+	 *
+	 * @ORM\Column(name="indexed_date", type="datetime", nullable=true)
+	 */
+	private $indexedDate;
+
+	/**
+	 * @var integer
+	 *
+	 * @ORM\Column(name="error", type="integer", nullable=true)
+	 * @JMS\Exclude
+	 */
+	private $error;
 
 	/**
 	 * @var boolean
@@ -67,6 +73,8 @@ class Package {
 	 * @JMS\Exclude
 	 */
 	private $new;
+
+	//*******************************************************************
 
 	/**
 	 * @var string
@@ -84,22 +92,74 @@ class Package {
 	private $versionReference;
 
 	/**
-	 * @var \DateTime
+	 * @var \Doctrine\Common\Collections\Collection
 	 *
-	 * @ORM\Column(name="indexed_date", type="datetime", nullable=true)
+	 * @ORM\ManyToMany(targetEntity="Package", inversedBy="dependencyOf", fetch="EXTRA_LAZY")
+	 * @ORM\JoinTable(name="package_dependencies",
+	 * 		joinColumns = {@ORM\JoinColumn(name="package_id", referencedColumnName="id")},
+	 * 		inverseJoinColumns = {@ORM\JoinColumn(name="depends_on", referencedColumnName="id")}
+	 * )
+	 * @ORM\OrderBy({"name" = "ASC"})
+	 * @JMS\Groups({"details"})
 	 */
-	private $indexedDate;
+	private $dependencies;
+
+	/**
+	 * @var \Doctrine\Common\Collections\Collection
+	 *
+	 * @ORM\ManyToMany(targetEntity="Package", mappedBy="dependencies", fetch="EXTRA_LAZY")
+	 * @ORM\OrderBy({"name" = "ASC"})
+	 * @JMS\Exclude
+	 */
+	private $dependencyOf;
+
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="description", type="text", nullable=true)
+	 * @JMS\Groups({"details", "description"})
+	 */
+	private $description;
+
+	//*******************************************************************
+
+	/**
+	 * @var \Doctrine\Common\Collections\Collection
+	 *
+	 * @ORM\OneToMany(targetEntity="CodeTag", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
+	 * @ORM\OrderBy({"count" = "DESC", "name" = "ASC"})
+	 * @JMS\Groups({"details"})
+	 */
+	private $codeTags;
 
 	/**
 	 * @var integer
 	 *
-	 * @ORM\Column(name="error", type="integer", nullable=true)
+	 * @ORM\Column(name="codetag_max", type="integer", nullable=true)
+	 * @JMS\Groups({"details"})
+	 */
+	private $codeTagsMaximum;
+
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="codetagstext", type="text", nullable=true)
 	 * @JMS\Exclude
 	 */
-	private $error;
+	private $codeTagsText;
 
 	//*******************************************************************
 
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="license", type="string", length=255, nullable=true)
+	 * @JMS\Groups({"details"})
+	 */
+	private $license;
+
+	//*******************************************************************
+	
 	/**
 	 * @var string
 	 *
@@ -117,30 +177,6 @@ class Package {
 	private $classes;
 
 	/**
-	 * @var \Tugel\TugelBundle\Entity\CodeTag
-	 *
-	 * @ORM\OneToMany(targetEntity="CodeTag", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
-	 * @ORM\OrderBy({"count" = "DESC"})
-	 * @JMS\Groups({"details"})
-	 */
-	private $codeTags;
-
-	/**
-	 * @var string
-	 *
-	 * @ORM\Column(name="codetagstext", type="text", nullable=true)
-	 * @JMS\Groups({"details"})
-	 */
-	private $codeTagsText;
-
-	/**
-	 * @var integer
-	 *
-	 * @ORM\Column(name="codetag_max", type="integer", nullable=true)
-	 */
-	private $codeTagsMaximum;
-
-	/**
 	 * @var string
 	 *
 	 * @ORM\Column(name="languages", type="string", length=1024, nullable=true)
@@ -151,19 +187,19 @@ class Package {
 
 	/**
 	 * @var float
-	 * 
+	 *
 	 */
 	public $_score;
-	
+
 	/**
 	 * @var float
-	 * 
+	 *
 	 */
 	public $_percentScore;
-	
+
 	/**
 	 * @var array
-	 * 
+	 *
 	 * @JMS\Exclude
 	 */
 	public $data;
@@ -171,6 +207,9 @@ class Package {
 	//*******************************************************************
 
 	public function __construct() {
+		$this->codeTags = new \Doctrine\Common\Collections\ArrayCollection();
+		$this->dependencies = new \Doctrine\Common\Collections\ArrayCollection();
+		$this->dependencyOf = new \Doctrine\Common\Collections\ArrayCollection();
 		$this->new = true;
 		$this->error = null;
 		$this->addedDate = new \DateTime();
@@ -189,7 +228,7 @@ class Package {
 	 * @return boolean
 	 */
 	public function isIndexed() {
-		return $this->version && !$this->error;
+		return $this->version && (!$this->error || $this->error == AbstractPlatform::ERR_NEEDS_REINDEXING);
 	}
 
 	public function getUrl() {
@@ -199,7 +238,7 @@ class Package {
 	public function getCachePath() {
 		return WEB_DIRECTORY . '../tmp/' . $this->getPlatform()->getName() . '/' . str_replace(':', '_', $this->getName()) . '/';
 	}
-	
+
 	//*******************************************************************
 
 	/**
@@ -297,7 +336,6 @@ class Package {
 		return $this->addedDate;
 	}
 
-	//*******************************************************************
 	//*******************************************************************
 
 	/**
@@ -485,7 +523,7 @@ class Package {
 	}
 
 	//*******************************************************************
-	
+
 	/**
 	 * Set codeTagsMaximum
 	 *
@@ -551,5 +589,89 @@ class Package {
 	}
 
 	//*******************************************************************
-	
+
+	/**
+	 * Add dependencies
+	 *
+	 * @param \Tugel\TugelBundle\Entity\Package $dependencies
+	 * @return Package
+	 */
+	public function addDependency(\Tugel\TugelBundle\Entity\Package $dependencies) {
+		$this->dependencies[] = $dependencies;
+		return $this;
+	}
+
+	/**
+	 * Remove dependencies
+	 *
+	 * @param \Tugel\TugelBundle\Entity\Package $dependencies
+	 */
+	public function removeDependency(\Tugel\TugelBundle\Entity\Package $dependencies) {
+		$this->dependencies->removeElement($dependencies);
+	}
+
+	/**
+	 * Get dependencies
+	 *
+	 * @return \Doctrine\Common\Collections\Collection
+	 */
+	public function getDependencies() {
+		return $this->dependencies;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Add dependencyOf
+	 *
+	 * @param \Tugel\TugelBundle\Entity\Package $dependencyOf
+	 * @return Package
+	 */
+	public function addDependencyOf(\Tugel\TugelBundle\Entity\Package $dependencyOf) {
+		$this->dependencyOf[] = $dependencyOf;
+		return $this;
+	}
+
+	/**
+	 * Remove dependencyOf
+	 *
+	 * @param \Tugel\TugelBundle\Entity\Package $dependencyOf
+	 */
+	public function removeDependencyOf(\Tugel\TugelBundle\Entity\Package $dependencyOf) {
+		$this->dependencyOf->removeElement($dependencyOf);
+	}
+
+	/**
+	 * Get dependencyOf
+	 *
+	 * @return \Doctrine\Common\Collections\Collection
+	 */
+	public function getDependencyOf() {
+		return $this->dependencyOf;
+	}
+
+	//*******************************************************************
+
+	/**
+	 * Set license
+	 *
+	 * @param string $license
+	 * @return Package
+	 */
+	public function setLicense($license) {
+		$this->license = $license;
+		return $this;
+	}
+
+	/**
+	 * Get license
+	 *
+	 * @return string
+	 */
+	public function getLicense() {
+		return $this->license;
+	}
+
+	//*******************************************************************
+
 }

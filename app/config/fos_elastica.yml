@@ -29,37 +29,48 @@ fos_elastica:
                     mappings:
                         id:
                           type: "integer"
+                          store: "yes"
                         platform.id:
                           type: "integer"
+                          store: "yes"
                         name:
                           type: "string"
+                          store: "yes"
                         version:
                           type: "string"
+                          store: "yes"
                         description:
                           type: "string"
+                          store: "yes"
                         codeTagsMaximum:
                           type: "integer"
+                          store: "yes"
                         codeTagsText:
                           type: "string"
-                          analyzer: "camelcase"
                           store: "no"
-                        codeTags:
-                          type: "object"
+                          analyzer: "camelcase"
+#                        codeTags:
+#                          type: "object"
+#                          store: "yes"
+#                          properties:
+#                            name:
+#                              type: "string"
+#                            count:
+#                              type: "float"
+                        license:
+                          type: "string"
                           store: "yes"
-                          properties:
-                            name:
-                              type: "string"
-                            count:
-                              type: "float"
                         languages:
                           type: "string"
+                          store: "no"
                           analyzer: "whitespace"
                         namespaces:
                           type: "string"
+                          store: "no"
                           analyzer: "identifier"
                         classes:
                           type: "string"
-                          boost: 1
+                          store: "no"
                           analyzer: "identifier"
                     persistence:
                         driver: orm

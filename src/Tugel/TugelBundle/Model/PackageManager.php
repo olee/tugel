@@ -139,13 +139,23 @@ EOM;
 				$indexPlatform = $this->getPlatformManager()->getPlatform($indexPlatform);
 
 			if ($package) {
-				if (!is_object($package))
-					$package = $indexPlatform->getPackage($package);
+				if (!is_object($package)) {
+					$packageName = $package;
+					$package = $indexPlatform->getPackage($packageName);
+				}
 				if (!$package) {
 					$this->log('package not found', $indexPlatform ? $indexPlatform->getPlatformEntity() : null, Logger::ERROR);
-					return false;
+					//return false;
+					
+					$pkg = new Package();
+					$pkg->setPlatform($indexPlatform->getPlatformReference());
+					$pkg->setName($packageName);
+					$this->getEntityManager()->persist($pkg);
+					$this->getEntityManager()->flush();
+					$package = $pkg;
+				} else {
+					$package->setError(AbstractPlatform::ERR_NEEDS_REINDEXING);
 				}
-				$package->setError(AbstractPlatform::ERR_NEEDS_REINDEXING);
 				return $indexPlatform->index($package, $quick, $dry);
 			}
 		}
@@ -176,6 +186,28 @@ EOM;
 		$this->log('finished indexing updated packages', $indexPlatform ? $indexPlatform->getPlatformEntity() : null, Logger::NOTICE);
 
 		return true;
+	}
+
+	public function resetIndex($platform = null, $clear = false, $errors = false) {
+		$qb = $this->getEntityManager()->getRepository('TugelBundle:Package')->createQueryBuilder('pkg');
+		$qb->update()->set('pkg.error', AbstractPlatform::ERR_NEEDS_REINDEXING);
+		if ($clear)
+			$qb->set('pkg.classes', null)->set('pkg.namespaces', null)->set('pkg.codeTagsText', null)->set('pkg.languages', null)->set('pkg.codeTagsMaximum', null);
+		
+		if ($platform) {
+			if (!is_object($platform))
+				$platform = $this->getPlatformManager()->getPlatform($platform);
+			if (!$platform) {
+				$this->log('platform not found', null, Logger::ERROR);
+				return false;
+			}
+			$qb->andWhere('pkg.platform_id = ' . $platform->getId());
+		}
+		
+		if (!$errors)
+			$qb->andWhere('pkg.error IS NULL');
+		
+		$qb->getQuery()->execute();
 	}
 
 	public function indexPackages(array $packages, $endTime = null, $quick = false, $dry = false) {
@@ -267,58 +299,108 @@ EOM;
 		
 		return $this->findPackages(null, $index['namespace'], $index['class'], $index['language'], $index['tag']);
 	}
+	
+	public function parseQuery($query) {
+		$data = array(
+			'raw' => $query,
+		);
+		$queryRegex = '/(.*)(?:\\s|^)%s:(?:(?:\'([^\']*)\')|([^\\s]+))\\s?(.*)/i';
+		$types = array(
+			'platform',
+			'language',
+			'license',
+			'depends',
+		);
+		foreach ($types as $type) {
+			if (preg_match(sprintf($queryRegex, $type), $query, $matches)) {
+				$query = $matches[1] . $matches[4];
+				if (isset($data[$type]))
+					$data[$type] = $data[$type] . ' ' . $matches[2].$matches[3];
+				else
+					$data[$type] = $matches[2].$matches[3];
+			}	
+		}
+		$data['query'] = $query;
+		return $data;
+	}
 
-	public function findPackages($platform = null, $namespaces = null, $classes = null, $languages = null, $codetags = null) {
+	public function find($query, $size = 25, $start = 0) {
 		if ($this->stopwatch)
 			$this->stopwatch->start('package_search');
 		
-		$query = new ESQ\Bool();
+		if (is_string($query))
+			$query = $this->parseQuery($query);
 		
-		if (!$namespaces && !$classes && !$languages && !$codetags)
-			return array();
-		
-		if (is_string($platform)) {
-			$platform = $this->getPlatformManager()->getPlatform($platform);
-			if ($platform)
-				$platform = $platform->getPlatformEntity();
+		if (is_array($query)) {
+			$q = new ESQ\Bool();
+			
+			if (!empty($query['platform'])) {
+				$platform = $query['platform'];
+				if (is_string($platform)) {
+					$platform = $this->getPlatformManager()->getPlatform($platform);
+					if ($platform)
+						$platform = $platform->getPlatformEntity();
+				}
+				if (!empty($platform)) {
+					$term = new ESQ\Term();
+					$term->setTerm('platform.id', is_object($platform) ? $platform->getId() : $platform);
+					$q->addMust($term);
+				}
+			}
+			
+			if (!empty($query['depends'])) {
+				throw new \Exception('Not yet implemented!');
+			}
+			
+			if (!empty($query['namespace'])) {
+				$match = new ESQ\Match();
+				$match->setFieldQuery('namespaces', $query['namespace']);
+				$q->addShould($match);
+			}
+			
+			if (!empty($query['class'])) {
+				$match = new ESQ\Match();
+				$match->setFieldQuery('classes', $query['class']);
+				$q->addShould($match);
+			}
+			
+			if (!empty($query['language'])) {
+				$match = new ESQ\Term();
+				$match->setFieldQuery('languages', $query['language']);
+				$q->addMust($match);
+			}
+			
+			if (!empty($query['license'])) {
+				$match = new ESQ\Match();
+				$match->setFieldQuery('license', $query['license']);
+				$q->addMust($match);
+			}
+			
+			if (!empty($query['query'])) {
+				$match = new ESQ\Match();
+				$match->setFieldQuery('codeTagsText', $query['query']);
+				$q->addShould($match);
+				
+				$match = new ESQ\Match();
+				$match->setFieldQuery('description', $query['query']);
+				$q->addShould($match);
+			}
+			$query = $q;
 		}
-		if (!empty($platform)) {
-			$term = new ESQ\Term();
-			$term->setTerm('platform.id', is_object($platform) ? $platform->getId() : $platform);
-			$query->addMust($term);
-		}
-		
-		if (!empty($namespaces)) {
-			$match = new ESQ\Match();
-			$match->setFieldQuery('namespaces', $namespaces);
-			$query->addShould($match);
-		}
-		
-		if (!empty($classes)) {
-			$match = new ESQ\Match();
-			$match->setFieldQuery('classes', $classes);
-			$query->addShould($match);
-		}
-		
-		if (!empty($languages)) {
-			$match = new ESQ\Match();
-			$match->setFieldQuery('languages', strtolower($languages));
-			$query->addMust($match);
-		}
-		
-		if (!empty($codetags)) {
-			$match = new ESQ\Match();
-			$match->setFieldQuery('codeTagsText', $codetags);
-			$query->addMust($match);
-		}
-		
+
 		$query = \Elastica\Query::create($query);
-		$query->setSize(25);
+		$query->setSize($size);
+		$query->setFrom($start);
 		$this->lastQuery = $query->toArray();
 		
-		$result = $this->getNormalizedScores($this->finderHelper->findWithScore($query), 2);
+		if (empty($this->lastQuery['query']['bool']))
+			$result = array();
+		else
+			$result = $this->getNormalizedScores($this->finderHelper->findWithScore($query), 3);
+		
 		if ($this->stopwatch)
 			$this->lastQueryTime = $this->stopwatch->stop('package_search')->getDuration();
+		
 		return $result;
 	}
 

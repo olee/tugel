@@ -40,7 +40,7 @@
 	content: "#";
 }
 .pkg_platform:before {
-	content: " - platform:";
+	content: "platform:";
 }
 .pkg_version:before {
 	content: " - version:";
@@ -128,6 +128,30 @@ h2 {
 
 /*****************************************/
 
+.main-search {
+	
+	align: center;
+	text-align: center;
+	margin: 180px 0;
+	
+	> div {
+		max-width: 290px;
+		margin: auto;
+	}
+	
+	ol {
+		margin-top: 10px;
+		
+		li {
+			display: inline;
+			margin-right: 4px;
+		}
+	}
+	
+}
+
+/*****************************************/
+
 .alert-warn-sign {
 	font-size: 2em;
 	vertical-align: middle;
@@ -138,6 +162,19 @@ h2 {
 
 .alert .alert-warn-sign {
 	float: left;
+}
+
+/*********************************/
+/* Make <a> tags usable as panel-headings */
+
+.panel-heading {
+	display: block;
+}
+.panel-heading:focus {
+	outline: none;
+}
+.panel-heading .badge {
+	float: right;
 }
 
 /*********************************/

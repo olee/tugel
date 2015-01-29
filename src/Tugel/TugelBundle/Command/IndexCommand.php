@@ -8,6 +8,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
+use Tugel\TugelBundle\Model\PackageManager;
+
 class IndexCommand extends ContainerAwareCommand {
 	/**
 	 * @see Command
@@ -34,7 +36,11 @@ If the version is not specified, the command tries to pick the newest version.")
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output) {
 		//echo "Result = " . $this->httpGet('https://api.github.com/repos/geissler/converter' . '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7') . "\n"; exit;
+		/** 
+		 * @var PackageManager
+		 */
 		$tugel = $this->getContainer()->get('tugel.package_manager');
+		
 		if ($tugel->index(
 			$input->getArgument('platform'), 
 			$input->getArgument('package'), 

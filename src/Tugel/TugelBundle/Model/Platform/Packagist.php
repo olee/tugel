@@ -108,6 +108,10 @@ class Packagist extends AbstractPlatform {
 			$package->data['source'] = array_key_exists('dist', $versionData) ? $versionData['dist']['url'] : null;
 			$package->data['git'] = array_key_exists('source', $versionData) ? $versionData['source']['url'] : null;
 			$package->data['git-reference'] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : null;
+			if (isset($versionData['require']))
+				$package->data['dependency'] = $versionData['require'];
+			if (isset($versionData['license']))
+				$package->data['license'] = join(', ', $versionData['license']);
 		}
 	}
 	

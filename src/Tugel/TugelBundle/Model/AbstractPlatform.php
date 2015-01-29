@@ -85,6 +85,10 @@ abstract class AbstractPlatform {
 		$this->languageManager = $languageManager;
 		$this->platformRepo = $this->getEntityManager()->getRepository('TugelBundle:Platform');
 		$this->packageRepo = $this->getEntityManager()->getRepository('TugelBundle:Package');
+		
+		$this->packageQb = $this->packageRepo->createQueryBuilder('e');
+		$this->packageQb->where('e.platform = ?1');
+		$this->packageQb->andWhere('e.name = ?2');
 	}
 
 	//*******************************************************************
@@ -100,6 +104,8 @@ abstract class AbstractPlatform {
 		$packages = array_unique($matches[1]);
 
 		foreach ($packages as $packageUri) {
+			if ($this->isCaseInsensitive())
+				$packageUri = strtolower($packageUri);
 			$package = $this->getPackage($packageUri);
 			if (!$package) {
 				$package = new Package();
@@ -119,7 +125,10 @@ abstract class AbstractPlatform {
 	}
 
 	public function index(Package $package, $quick = false, $dry = false) {
+		//$this->log('quick = ' . ($quick ? 'true' : 'false'), $package, Logger::INFO);
 		if ($quick) {
+			//$this->log('version = ' . $package->getVersion(), $package, Logger::INFO);
+			//$this->log('idx = ' . $package->getCachePath() . 'tugel_repository', $package, Logger::INFO);
 			if (!$package->getVersion() || !file_exists($package->getCachePath() . 'tugel_repository'))
 				$quick = false;
 			else
@@ -200,9 +209,27 @@ abstract class AbstractPlatform {
 		if (array_key_exists('description', $package->data))
 			$package->setDescription($package->data['description']);
 
+		// Get license
+		if (array_key_exists('license', $package->data))
+			$package->setLicense($package->data['license']);
+
+		// Get dependencies
+		$package->getDependencies()->clear();
+		if (array_key_exists('dependency', $package->data)) {
+			foreach ($package->data['dependency'] as $name => $version) {
+				$otherPkg = $this->getPackage($name);
+				if ($otherPkg)
+					$package->addDependency($otherPkg);
+			}
+		}
+
 		// Get package name if it's case-sensitive
-		if (array_key_exists('packagename', $package->data))
-			$package->setName($package->data['packagename']);
+		if (array_key_exists('packagename', $package->data)) {
+			if ($this->isCaseInsensitive())
+				$package->setName(strtolower($package->data['packagename']));
+			else
+				$package->setName($package->data['packagename']);
+		}
 
 		// Check if a version was found
 		if (!array_key_exists('version', $package->data) || !$package->data['version']) {
@@ -272,9 +299,10 @@ abstract class AbstractPlatform {
 					unset($tags[$tag->getName()]);
 				} else {
 					$package->removeCodeTag($tag);
-					// $this->getEntityManager()->remove($tag);
+					$this->getEntityManager()->remove($tag);
 				}
 			}
+		
 			foreach ($tags as $tag => $count)
 				$package->addCodeTag(new CodeTag($package, $tag, $count));
 		}
@@ -301,6 +329,10 @@ abstract class AbstractPlatform {
 	//*******************************************************************
 
 	public abstract function getName();
+
+	public function isCaseInsensitive() {
+		return false;
+	}
 
 	public abstract function getCrawlUrl();
 
@@ -339,14 +371,10 @@ abstract class AbstractPlatform {
 	 * @return Package
 	 */
 	public function getPackage($name) {
-		if (!$this->packageQb) {
-			$this->packageQb = $this->packageRepo->createQueryBuilder('e');
-			$this->packageQb->where('e.platform = ?1');
-			$this->packageQb->andWhere('e.name = ?2');
-		}
-		$res = $this->packageQb->setParameters(array(1 => $this->getPlatformReference(), 2 => $name))->getQuery()->getOneOrNullResult();
-		//$this->log("search $name = " . $res, $this->getPlatformEntity());
-		return $res;
+		return $this->packageQb->setParameters(array(
+			1 => $this->getPlatformReference(), 
+			2 => $this->isCaseInsensitive() ? strtolower($name) : $name)
+		)->getQuery()->getOneOrNullResult();
 	}
 
 	//*******************************************************************
