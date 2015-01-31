@@ -10,15 +10,11 @@ class JavaClass extends Language {
 		
 	public function analyzeProvide(Index $index, $path, $file) {
 		$name = str_replace('/', '.', $file);
-		
 		if (preg_match('@^(.*)\.[^\.]+.class$@i', $name, $matches)) {
 			$index->addNamespace($matches[1]);
-			$index->addTag($matches[1]);
 		}
-		
 		if (preg_match('@([^\$\.]+).class$@i', $name, $matches)) {
 			$index->addClass($matches[1]);
-			$index->addTag($matches[1]);
 		}
 	}
 		

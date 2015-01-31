@@ -34,6 +34,13 @@ class Index {
 		Utils::array_add($this->tags, $tag);
 	}
 
+	public function tagData() {
+		foreach ($this->classes as $tag => $count)
+			Utils::array_add($this->tags, $tag, $count);
+		foreach ($this->namespaces as $tag => $count)
+			Utils::array_add($this->tags, $tag); //, $count);
+	}
+
 	/**
 	 * @return array
 	 */

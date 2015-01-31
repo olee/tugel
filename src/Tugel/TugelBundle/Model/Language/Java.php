@@ -14,14 +14,12 @@ class Java extends Language {
 		preg_match_all('@(?:^|\\s)package\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][^\\s;]*)(?:\\s|;)@', $src, $matches);
 		foreach ($matches[1] as $namespace) {
 			$index->addNamespace($namespace);
-			$index->addTag($namespace);
 		}
 		$ns = count($index->getNamespaces()) == 1 ? key($index->getNamespaces()) . '\\' : '';
 		
 		preg_match_all('@(?<!private)\\s+class\\s+([a-zA-Z_$][a-zA-Z\\d_$]*)(?:\\s|\\{)@', $src, $matches);
 		foreach ($matches[1] as $class) {
 			$index->addClass($ns . $class);
-			$index->addTag($ns . $class);
 		}
 	}
 		

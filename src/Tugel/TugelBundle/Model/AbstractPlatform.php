@@ -281,6 +281,9 @@ abstract class AbstractPlatform {
 			}
 		}
 		
+		// Tag namespaces, classes, etc.
+		$index->tagData();
+		
 		if ($dry)
 			return;
 

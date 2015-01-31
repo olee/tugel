@@ -29,6 +29,7 @@ monolog:
     channels: ["tugel"]
     handlers:
         console:
+            type:     console
             verbosity_levels:
                 VERBOSITY_NORMAL: INFO
         tugel:

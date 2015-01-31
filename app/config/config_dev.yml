@@ -23,6 +23,7 @@ monolog:
             path:     "%kernel.logs_dir%/doctrine.log"
             channels: [doctrine]
         console:
+            type:     console
             channels: [!elastica]
             verbosity_levels:
                 VERBOSITY_NORMAL: INFO

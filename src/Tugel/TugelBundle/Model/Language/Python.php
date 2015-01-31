@@ -24,7 +24,6 @@ class Python extends Language {
 		preg_match_all('@(?:^|\\n)\\s+class\\s+([a-zA-Z_$][a-zA-Z\\d_$]*)@', $src, $matches);
 		foreach ($matches[1] as $class) {
 			$index->addClass($ns . $class);
-			$index->addTag($ns . $class);
 		}
 	}
 		

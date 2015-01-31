@@ -19,14 +19,12 @@ class PHP extends Language {
 			preg_match_all('@(?:^|\\s)namespace\\s+\\\\?([a-zA-Z_][\\da-zA-Z\\\\_]*)\\s*;@', $src, $matches);
 			foreach ($matches[1] as $namespace) {
 				$index->addNamespace($namespace);
-				$index->addTag($namespace);
 			}
 			$ns = count($index->getNamespaces()) == 1 ? key($index->getNamespaces()) . '\\' : '';
 			
 			preg_match_all('@(?:^|\\s)class\\s+([a-zA-Z][\\da-zA-Z_]*)[\\s\\{]@', $src, $matches);
 			foreach ($matches[1] as $class) {
 				$index->addClass($ns . $class);
-				$index->addTag($ns . $class);
 			}
 		} else {
 			echo "Not implemented"; exit;

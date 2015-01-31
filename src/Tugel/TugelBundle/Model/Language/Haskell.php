@@ -14,14 +14,12 @@ class Haskell extends Language {
 		preg_match_all('@(?:^|\\s)module\\s+((?:[a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*)[^a-zA-Z\\d_$\\.]@', $src, $matches);
 		foreach ($matches[1] as $namespace) {
 			$index->addNamespace($namespace);
-			$index->addTag($namespace);
 		}
 		$ns = count($index->getNamespaces()) == 1 ? key($index->getNamespaces()) . '\\' : '';
 		
 		preg_match_all('@(?:^|\\s)instance\\s+([a-zA-Z_$][a-zA-Z\\d_$]*)\\s@', $src, $matches);
 		foreach ($matches[1] as $class) {
 			$index->addClass($ns . $class);
-			$index->addTag($ns . $class);
 		}
 	}
 		
