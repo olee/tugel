@@ -16,8 +16,8 @@ use Tugel\TugelBundle\Entity\Package;
 class Packagist extends AbstractPlatform {
 
 	protected function doDownload(Package $package, $path) {
-		if (isset($package->data['source'])) {
-			$url = $package->data['source'];
+		if (isset($package->data[AbstractPlatform::PKG_GITHUB_ARCHIVE])) {
+			$url = $package->data[AbstractPlatform::PKG_GITHUB_ARCHIVE];
 			if (strpos($url, 'github.com')) {
 				$url .= '?client_id=6e91ea3626b5a9ff12bf&client_secret=a182ddb9a7b008e3395f8e743e3944fcccb178e7';
 			}
@@ -31,14 +31,14 @@ class Packagist extends AbstractPlatform {
 				return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 			@unlink($path . $fn);
 			
-		} else if (isset($package->data['git'])) {
-			$url = $package->data['git'];
+		} else if (isset($package->data[AbstractPlatform::PKG_GIT])) {
+			$url = $package->data[AbstractPlatform::PKG_GIT];
 			if (!$this->checkRepository($url))
 				return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
 	
 			$this->getLogger()->debug('> checking out git repository ' . $url);
 			exec('git clone --no-checkout ' . escapeshellarg($url) . ' ' . escapeshellarg($path) . ' && cd ' . escapeshellarg($path) . 
-				' && git reset -q --hard ' . $package->data['git-reference'], $output, $success);
+				' && git reset -q --hard ' . $package->data[AbstractPlatform::PKG_GIT_REF], $output, $success);
 			// Delete .git cache
 			if (file_exists($path . '.git/'))
 				exec('rm -rf ' . escapeshellarg($path . '.git/'));
@@ -97,21 +97,21 @@ class Packagist extends AbstractPlatform {
 		
 		// Get basic package information
 		$package->data = array(
-			'description' => $data['package']['description'],
-			'version' => $lastestVersion,
+			AbstractPlatform::PKG_DESC => $data['package']['description'],
+			AbstractPlatform::PKG_VERSION => $lastestVersion,
 		);
 		
 		if ($lastestVersion) {
 			// Get master version reference
 			$versionData = $data['package']['versions'][$lastestVersion];
-			$package->data['version-ref'] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : $versionData['dist']['reference'];
-			$package->data['source'] = array_key_exists('dist', $versionData) ? $versionData['dist']['url'] : null;
-			$package->data['git'] = array_key_exists('source', $versionData) ? $versionData['source']['url'] : null;
-			$package->data['git-reference'] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : null;
+			$package->data[AbstractPlatform::PKG_VERSION_REF] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : $versionData['dist']['reference'];
+			$package->data[AbstractPlatform::PKG_GITHUB_ARCHIVE] = array_key_exists('dist', $versionData) ? $versionData['dist']['url'] : null;
+			$package->data[AbstractPlatform::PKG_GIT] = array_key_exists('source', $versionData) ? $versionData['source']['url'] : null;
+			$package->data[AbstractPlatform::PKG_GIT_REF] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : null;
 			if (isset($versionData['require']))
-				$package->data['dependency'] = $versionData['require'];
+				$package->data[AbstractPlatform::PKG_DEPENDENCIES] = $versionData['require'];
 			if (isset($versionData['license']))
-				$package->data['license'] = join(', ', $versionData['license']);
+				$package->data[AbstractPlatform::PKG_LICENSE] = join(', ', $versionData['license']);
 		}
 	}
 	

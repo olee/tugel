@@ -31,7 +31,7 @@
 					<ul>
 						{% for pkg in package.dependencies %}
 						<li>
-							<a href="{{ path('info', {id:pkg.id}) }}">{{ pkg.name }}</a>
+							<a href="{{ path('info_named', {platform:pkg.platform.name, package:pkg.name}) }}">{{ pkg.name }}</a>
 							{% endfor %}
 					</ul>
 				</div>
@@ -47,7 +47,7 @@
 					<ul>
 						{% for pkg in package.dependencyOf %}
 						<li>
-							<a href="{{ path('info', {id:pkg.id}) }}">{{ pkg.name }}</a>
+							<a href="{{ path('info_named', {platform:pkg.platform.name, package:pkg.name}) }}">{{ pkg.name }}</a>
 							{% endfor %}
 					</ul>
 				</div>

@@ -49,6 +49,16 @@ fos_elastica:
                           type: "string"
                           store: "no"
                           analyzer: "camelcase"
+                        dependencies:
+                          type: "object"
+                          store: "yes"
+                          properties:
+                            id:
+                              type: "integer"
+                              store: "yes"
+                            name: 
+                              type: "string"
+                              store: "yes"
 #                        codeTags:
 #                          type: "object"
 #                          store: "yes"

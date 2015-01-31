@@ -188,9 +188,11 @@ EOM;
 		return true;
 	}
 
-	public function resetIndex($platform = null, $clear = false, $errors = false) {
-		$qb = $this->getEntityManager()->getRepository('TugelBundle:Package')->createQueryBuilder('pkg');
-		$qb->update()->set('pkg.error', AbstractPlatform::ERR_NEEDS_REINDEXING);
+	public function resetIndex($platform = null, $clear = false, $errors = false, $force = false) {
+		$qb = $this->getEntityManager()->getRepository('TugelBundle:Package')->createQueryBuilder('pkg')->update();
+		$qb->set('pkg.new', '1');
+		if ($force)
+			$qb->set('pkg.error', AbstractPlatform::ERR_NEEDS_REINDEXING);
 		if ($clear)
 			$qb->set('pkg.classes', null)->set('pkg.namespaces', null)->set('pkg.codeTagsText', null)->set('pkg.languages', null)->set('pkg.codeTagsMaximum', null);
 		
@@ -201,7 +203,7 @@ EOM;
 				$this->log('platform not found', null, Logger::ERROR);
 				return false;
 			}
-			$qb->andWhere('pkg.platform_id = ' . $platform->getId());
+			$qb->andWhere('pkg.platform = ' . $platform->getPlatformReference()->getId());
 		}
 		
 		if (!$errors)
@@ -349,7 +351,9 @@ EOM;
 			}
 			
 			if (!empty($query['depends'])) {
-				throw new \Exception('Not yet implemented!');
+				$match = new ESQ\Match();
+				$match->setFieldQuery('dependencies.name', $query['depends']);
+				$q->addMust($match);
 			}
 			
 			if (!empty($query['namespace'])) {

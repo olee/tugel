@@ -21,8 +21,8 @@
 		<li>
 			<h4>
 				<span class="pkg_score {{ package._percentScore > 0.66 ? 'score_green' : (package._percentScore > 0.5 ? 'score_orange' : 'score_red') }}">{{ package._score|number_format(3) }}</span>
-				{#<a target="_blank" href="{{ path('info', {id:package.id}) }}">{{ package.name }}</a>#}
-				<a target="_blank" href="{{ path('info_named', {platform:package.platform.name, package:package.name}) }}">{{ package.name }}</a>
+				{#<a href="{{ path('info', {id:package.id}) }}">{{ package.name }}</a>#}
+				<a href="{{ path('info_named', {platform:package.platform.name, package:package.name}) }}">{{ package.name }}</a>
 				<a href="{{ package.url }}"><span class="glyphicon glyphicon-link"> </span></a>
 			</h4>
 			<div>

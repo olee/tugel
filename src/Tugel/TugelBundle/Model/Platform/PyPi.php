@@ -23,11 +23,11 @@ function endsWith($haystack, $needle) {
 class PyPi extends AbstractPlatform {
 
 	protected function doDownload(Package $package, $path) {
-		if (empty($package->data['downloadurl']))
+		if (empty($package->data[AbstractPlatform::PKG_ARCHIVE]))
 			return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
 		
-		$fn = basename($package->data['downloadurl']);
-		$url = Utils::rawurlEncode($package->data['downloadurl']);
+		$fn = basename($package->data[AbstractPlatform::PKG_ARCHIVE]);
+		$url = Utils::rawurlEncode($package->data[AbstractPlatform::PKG_ARCHIVE]);
 		if (!$this->downloadFile($url, $path . $fn))
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 		
@@ -95,11 +95,11 @@ class PyPi extends AbstractPlatform {
 		
 		// Get basic package information
 		$package->data = array(
-			//'description' => $data['info']['description'],
-			'description' => $data['info']['summary'],
-			'version' => $version,
-			'packagename' => $data['info']['name'],
-			'downloadurl' => $downloadurl,
+			AbstractPlatform::PKG_DESC => $data['info']['summary'], // $data['info']['description']
+			AbstractPlatform::PKG_VERSION => $version,
+			AbstractPlatform::PKG_NAME => $data['info']['name'],
+			AbstractPlatform::PKG_ARCHIVE => $downloadurl,
+			AbstractPlatform::PKG_LICENSE => isset($data['info']['license']) ? $data['info']['license'] : null,
 		);
 	}
 

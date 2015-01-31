@@ -33,6 +33,17 @@ abstract class AbstractPlatform {
 	const ERR_DOWNLOAD_NOT_FOUND = 5;
 	const ERR_NEEDS_REINDEXING = 10;
 	const ERR_PACKAGEDATA_NOT_FOUND = 11;
+	
+	const PKG_NAME = 'name';
+	const PKG_VERSION = 'version';
+	const PKG_VERSION_REF = 'version-ref';
+	const PKG_DESC = 'description';
+	const PKG_ARCHIVE = 'archive-url';
+	const PKG_GIT = 'git-url';
+	const PKG_GIT_REF = 'git-ref';
+	const PKG_GITHUB_ARCHIVE = 'github-url';
+	const PKG_LICENSE = 'license';
+	const PKG_DEPENDENCIES = 'dependency';
 
 	public $ERROR_MESSAGES = array(AbstractPlatform::ERR_PACKAGE_NOT_FOUND => 'Package not found', AbstractPlatform::ERR_VERSION_NOT_FOUND => 'Version not found', AbstractPlatform::ERR_DOWNLOAD_ERROR => 'Download failed', AbstractPlatform::ERR_OTHER_ERROR => 'Unknown error', AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND => 'Download not found', AbstractPlatform::ERR_NEEDS_REINDEXING => 'Needs reindexing', );
 
@@ -140,15 +151,15 @@ abstract class AbstractPlatform {
 			if (!$this->getPackageData($package))
 				return false;
 			// Check, if version is the same as the last one indexed (master-versions)
-			if (!$package->getError() && $package->getVersion() == $package->data['version']) {
-				if (!array_key_exists('version-ref', $package->data) || $package->data['version-ref'] == $package->getVersionReference()) {
+			if (!$package->getError() && $package->getVersion() == $package->data[AbstractPlatform::PKG_VERSION]) {
+				if (!array_key_exists(AbstractPlatform::PKG_VERSION_REF, $package->data) || $package->data[AbstractPlatform::PKG_VERSION_REF] == $package->getVersionReference()) {
 					$this->log('Same version', $package, Logger::INFO);
 					if (!$dry)
 						$package->setNew(0);
 					return true;
 				}
 			}
-			$package->setVersion($package->data['version']);
+			$package->setVersion($package->data[AbstractPlatform::PKG_VERSION]);
 		}
 
 		// Download package data
@@ -188,9 +199,9 @@ abstract class AbstractPlatform {
 	public function getCacheVersion(Package $package, $cachePath) {
 		$cacheIdFile = $cachePath . 'tugel_repository';
 		$cacheVersion = file_exists($cacheIdFile) ? file_get_contents($cacheIdFile) : false;
-		if (array_key_exists('version-ref', $package->data) && $package->data['version-ref'] != $package->getVersionReference()) {
+		if (array_key_exists(AbstractPlatform::PKG_VERSION_REF, $package->data) && $package->data[AbstractPlatform::PKG_VERSION_REF] != $package->getVersionReference()) {
 			$cacheVersion = false;
-			$package->setVersionReference($package->data['version-ref']);
+			$package->setVersionReference($package->data[AbstractPlatform::PKG_VERSION_REF]);
 		}
 		return $cacheVersion;
 	}
@@ -206,17 +217,17 @@ abstract class AbstractPlatform {
 		}
 
 		// Get description
-		if (array_key_exists('description', $package->data))
-			$package->setDescription($package->data['description']);
+		if (!empty($package->data[AbstractPlatform::PKG_DESC]))
+			$package->setDescription($package->data[AbstractPlatform::PKG_DESC]);
 
 		// Get license
-		if (array_key_exists('license', $package->data))
-			$package->setLicense($package->data['license']);
+		if (!empty($package->data[AbstractPlatform::PKG_LICENSE]))
+			$package->setLicense($package->data[AbstractPlatform::PKG_LICENSE]);
 
 		// Get dependencies
 		$package->getDependencies()->clear();
-		if (array_key_exists('dependency', $package->data)) {
-			foreach ($package->data['dependency'] as $name => $version) {
+		if (!empty($package->data[AbstractPlatform::PKG_DEPENDENCIES])) {
+			foreach ($package->data[AbstractPlatform::PKG_DEPENDENCIES] as $name => $version) {
 				$otherPkg = $this->getPackage($name);
 				if ($otherPkg)
 					$package->addDependency($otherPkg);
@@ -224,15 +235,15 @@ abstract class AbstractPlatform {
 		}
 
 		// Get package name if it's case-sensitive
-		if (array_key_exists('packagename', $package->data)) {
+		if (!empty($package->data[AbstractPlatform::PKG_NAME])) {
 			if ($this->isCaseInsensitive())
-				$package->setName(strtolower($package->data['packagename']));
+				$package->setName(strtolower($package->data[AbstractPlatform::PKG_NAME]));
 			else
-				$package->setName($package->data['packagename']);
+				$package->setName($package->data[AbstractPlatform::PKG_NAME]);
 		}
 
 		// Check if a version was found
-		if (!array_key_exists('version', $package->data) || !$package->data['version']) {
+		if (!array_key_exists(AbstractPlatform::PKG_VERSION, $package->data) || !$package->data[AbstractPlatform::PKG_VERSION]) {
 			$this->log('No version found', $package, Logger::WARNING);
 			$package->setError(AbstractPlatform::ERR_VERSION_NOT_FOUND);
 			return false;

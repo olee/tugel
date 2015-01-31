@@ -3,6 +3,8 @@
 namespace Tugel\TugelBundle\Model\Platform;
 
 use Doctrine\ORM\EntityManager;
+use Symfony\Component\Yaml\Parser;
+use Symfony\Component\Yaml\Exception\ParseException;
 
 use Tugel\TugelBundle\Exception\DownloadErrorException;
 
@@ -50,21 +52,30 @@ class Hackage extends AbstractPlatform {
 	}
 
 	protected function doGetPackageData(Package $package) {
-		$src = $this->httpGet('https://hackage.haskell.org/package/' . $package->getName());
+		$src = $this->httpGet('https://hackage.haskell.org/package/' . $package->getName() . '/' . $package->getName() . '.cabal');
 		if ($src === false) {
 			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 		
 		$package->data = array();
 		
-		// Get versions
-		preg_match_all('@href="/package/[^"]*-([\d\.]*\d)@i', $src, $matches);
-		$package->data['version'] = end($matches[1]);
+		// Get version
+		if (!preg_match('@^version\s*:\s*([^\s]+)@mi', $src, $matches)) {
+			//print_r($src); exit;
+			return AbstractPlatform::ERR_PACKAGEDATA_NOT_FOUND;
+		}
+		$package->data[AbstractPlatform::PKG_VERSION] = $matches[1];
 		
 		// Get description
-		preg_match('@id="content"[\s\S]*<div[\s\S]*</div>([\s\S]*)<hr@imx', $src, $matches);
-		if (isset($matches[1])) {
-			$package->data['description'] = strip_tags($matches[1]);
+		if (preg_match('@^description\s*:\s*(.*(?:.*\r?\n\s+)*)@mi', $src, $matches)) {
+			$desc = $matches[1];
+			$package->data[AbstractPlatform::PKG_DESC] = preg_replace('@\n\s+\.?@', "\n", $desc);
+		}
+		
+		// Get license
+		if (preg_match('@^license\s*:\s*(.*(?:.*\r?\n\s+)*)@mi', $src, $matches)) {
+			$desc = $matches[1];
+			$package->data[AbstractPlatform::PKG_LICENSE] = preg_replace('@\n\s+\.?@', ", ", $desc);
 		}
 	}
 

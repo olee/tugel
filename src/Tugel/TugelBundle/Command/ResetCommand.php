@@ -22,6 +22,7 @@ class ResetCommand extends ContainerAwareCommand {
 			new InputArgument('platform', InputArgument::OPTIONAL, 'The platform'),
 		));
 		$this->addOption('clear', null, InputOption::VALUE_NONE, 'Completly clear index');
+		$this->addOption('force', null, InputOption::VALUE_NONE, 'Force reindexing (even if version is the same)');
 		$this->addOption('errors', null, InputOption::VALUE_NONE, 'Reset errors');
 		$this->setDescription("Reset index / reindex");
 	}
@@ -34,7 +35,7 @@ class ResetCommand extends ContainerAwareCommand {
 		 * @var PackageManager
 		 */
 		$tugel = $this->getContainer()->get('tugel.package_manager');
-		$tugel->resetIndex($input->getArgument('platform'), $input->getOption('clear'), $input->getOption('errors'));
+		$tugel->resetIndex($input->getArgument('platform'), $input->getOption('clear'), $input->getOption('errors'), $input->getOption('force'));
 	}
 
 }
