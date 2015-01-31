@@ -37,7 +37,7 @@ abstract class AbstractPlatform {
 	const PKG_NAME = 'name';
 	const PKG_VERSION = 'version';
 	const PKG_VERSION_REF = 'version-ref';
-	const PKG_DESC = 'description';
+	const PKG_DESCRIPTION = 'description';
 	const PKG_ARCHIVE = 'archive-url';
 	const PKG_GIT = 'git-url';
 	const PKG_GIT_REF = 'git-ref';
@@ -217,8 +217,8 @@ abstract class AbstractPlatform {
 		}
 
 		// Get description
-		if (!empty($package->data[AbstractPlatform::PKG_DESC]))
-			$package->setDescription($package->data[AbstractPlatform::PKG_DESC]);
+		if (!empty($package->data[AbstractPlatform::PKG_DESCRIPTION]))
+			$package->setDescription($package->data[AbstractPlatform::PKG_DESCRIPTION]);
 
 		// Get license
 		if (!empty($package->data[AbstractPlatform::PKG_LICENSE]))

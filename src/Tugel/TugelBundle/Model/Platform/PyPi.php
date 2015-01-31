@@ -95,7 +95,7 @@ class PyPi extends AbstractPlatform {
 		
 		// Get basic package information
 		$package->data = array(
-			AbstractPlatform::PKG_DESC => $data['info']['summary'], // $data['info']['description']
+			AbstractPlatform::PKG_DESCRIPTION => $data['info']['summary'], // $data['info']['description']
 			AbstractPlatform::PKG_VERSION => $version,
 			AbstractPlatform::PKG_NAME => $data['info']['name'],
 			AbstractPlatform::PKG_ARCHIVE => $downloadurl,

@@ -69,7 +69,7 @@ class Hackage extends AbstractPlatform {
 		// Get description
 		if (preg_match('@^description\s*:\s*(.*(?:.*\r?\n\s+)*)@mi', $src, $matches)) {
 			$desc = $matches[1];
-			$package->data[AbstractPlatform::PKG_DESC] = preg_replace('@\n\s+\.?@', "\n", $desc);
+			$package->data[AbstractPlatform::PKG_DESCRIPTION] = preg_replace('@\n\s+\.?@', "\n", $desc);
 		}
 		
 		// Get license

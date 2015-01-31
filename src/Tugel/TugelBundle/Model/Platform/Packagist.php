@@ -97,7 +97,7 @@ class Packagist extends AbstractPlatform {
 		
 		// Get basic package information
 		$package->data = array(
-			AbstractPlatform::PKG_DESC => $data['package']['description'],
+			AbstractPlatform::PKG_DESCRIPTION => $data['package']['description'],
 			AbstractPlatform::PKG_VERSION => $lastestVersion,
 		);
 		

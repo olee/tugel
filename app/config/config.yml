@@ -28,6 +28,9 @@ framework:
 monolog:
     channels: ["tugel"]
     handlers:
+        console:
+            verbosity_levels:
+                VERBOSITY_NORMAL: INFO
         tugel:
             type:     stream
             level:    info

@@ -106,8 +106,11 @@ class Maven extends AbstractPlatform {
 		$package->data = array(
 			AbstractPlatform::PKG_VERSION => $data->response->docs[0]->latestVersion,
 			AbstractPlatform::PKG_DEPENDENCIES => $deps,
-			AbstractPlatform::PKG_DESC => $pom['name'],
 		);
+		
+		if (isset($pom['name'])) {
+			$package->data[AbstractPlatform::PKG_DESCRIPTION] = $pom['name'];
+		}
 		
 		// Get license
 		if (!empty($pom['licenses']) && !empty($pom['licenses']['license'])) {
