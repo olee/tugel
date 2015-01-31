@@ -122,7 +122,7 @@ class Maven extends AbstractPlatform {
 			if (!isset($src[0]))
 				$src = array($src);
 			$package->data[AbstractPlatform::PKG_LICENSE] = join(', ', array_map(function($v) {
-				return $v['name'];
+				return !empty($v['name']) ? $v['name'] : null;
 			}, $src));
 		}
 	}
