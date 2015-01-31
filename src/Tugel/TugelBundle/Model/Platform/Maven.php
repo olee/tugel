@@ -3,6 +3,7 @@
 namespace Tugel\TugelBundle\Model\Platform;
 
 use Doctrine\ORM\EntityManager;
+use Monolog\Logger;
 
 use Tugel\TugelBundle\Exception\PackageNotFoundException;
 use Tugel\TugelBundle\Exception\VersionNotFoundException;
@@ -77,7 +78,7 @@ class Maven extends AbstractPlatform {
 		$parts = $this->getPackageNameParts($package);
 		$url = 'http://search.maven.org/solrsearch/select?q=g:' . $parts[0] . '%20AND%20a:' . $parts[1] . '&wt=json';
 		$json = $this->httpGet($url);
-		if ($json === false) {
+		if (!$json) {
 			return AbstractPlatform::ERR_PACKAGE_NOT_FOUND;
 		}
 
@@ -85,28 +86,31 @@ class Maven extends AbstractPlatform {
 		if (!$data || empty($data->response->docs)) {
 			return AbstractPlatform::ERR_PACKAGEDATA_NOT_FOUND;
 		}
+
+		// Assemble package information
+		$package->data = array(
+			AbstractPlatform::PKG_VERSION => $data->response->docs[0]->latestVersion,
+			AbstractPlatform::PKG_DEPENDENCIES => array(),
+		);
 		
 		// Get POM file
 		$url = $this->getMavenDownloadUrl($parts[0], $parts[1], $data->response->docs[0]->latestVersion, '.pom');
 		$xml = $this->httpGet($url);
+		if (!$xml) {
+			$this->log('Could not fetch POM', $package, Logger::ERROR);
+			return;
+		}
 		$serializer = new Serializer(array(new GetSetMethodNormalizer()), array(new XmlEncoder()));
 		$pom = $serializer->decode($xml, 'xml');
 		
 		// Get dependencies
-		$deps = array();
 		if (!empty($pom['dependencies']) && !empty($pom['dependencies']['dependency'])) {
 			$src = $pom['dependencies']['dependency'];
 			if (!isset($src[0]))
 				$src = array($src);
 			foreach ($src as $v)
-				$deps[$v['groupId'] . ':' . $v['artifactId']] = empty($v['version']) ? '' : $v['version'];
+				$package->data[AbstractPlatform::PKG_DEPENDENCIES][$v['groupId'] . ':' . $v['artifactId']] = empty($v['version']) ? '' : $v['version'];
 		}
-
-		// Assemble package information
-		$package->data = array(
-			AbstractPlatform::PKG_VERSION => $data->response->docs[0]->latestVersion,
-			AbstractPlatform::PKG_DEPENDENCIES => $deps,
-		);
 		
 		if (isset($pom['name'])) {
 			$package->data[AbstractPlatform::PKG_DESCRIPTION] = $pom['name'];
