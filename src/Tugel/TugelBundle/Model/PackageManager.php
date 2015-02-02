@@ -280,6 +280,52 @@ EOM;
 			return false;
 		}
 	}
+	
+	public function getStats() {
+		$data = array(
+			'platforms' => array(),
+		);
+		
+		$data['licenses'] = $this->packageRepository->createQueryBuilder('pkg')
+			->select('pkg.license, LOWER(pkg.license) as _group', 'COUNT(pkg.license) AS _count') //
+			->groupBy('_group') //
+			->addOrderBy('_count', 'DESC') //
+			->addOrderBy('pkg.license', 'ASC') //
+			->getQuery()->getResult();
+
+		foreach ($this->getEntityManager()->getRepository('TugelBundle:Platform')->findAll() as $platform) {
+			$platformData = array();
+			
+			$platformData['count'] = (int) $this->packageRepository->createQueryBuilder('pkg') //
+				->select('count(pkg)') //
+				->where('pkg.platform = ' . $platform->getId()) //
+				->getQuery()->getSingleScalarResult(); //
+			$platformData['indexed_count'] = (int) $this->packageRepository->createQueryBuilder('pkg') //
+				->select('count(pkg)') //
+				->where('pkg.platform = ' . $platform->getId()) //
+				->andWhere('pkg.version IS NOT NULL') //
+				->andWhere('pkg.error IS NULL') //
+				->getQuery()->getSingleScalarResult();
+			$platformData['error_count'] = (int) $this->packageRepository->createQueryBuilder('pkg') //
+				->select('count(pkg)') //
+				->where('pkg.platform = ' . $platform->getId()) //
+				->andWhere('pkg.error IS NOT NULL') //
+				->getQuery()->getSingleScalarResult();
+			$platformData['last_added'] = $this->packageRepository->createQueryBuilder('pkg') //
+				->where('pkg.platform = ' . $platform->getId()) //
+				->orderBy('pkg.addedDate', 'DESC') //
+				->setMaxResults(4) //
+				->getQuery()->getResult();
+			$platformData['last_indexed'] = $this->packageRepository->createQueryBuilder('pkg') //
+				->where('pkg.platform = ' . $platform->getId()) //
+				->orderBy('pkg.indexedDate', 'DESC') //
+				->setMaxResults(8) //
+				->getQuery()->getResult();
+
+			$data['platforms'][$platform->getName()] = $platformData;
+		}
+		return $data;
+	}
 
 	//*******************************************************************
 

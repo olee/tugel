@@ -100,13 +100,17 @@ class Maven extends AbstractPlatform {
 			$this->log('Could not fetch POM', $package, Logger::ERROR);
 			return;
 		}
-		$serializer = new Serializer(array(new GetSetMethodNormalizer()), array(new XmlEncoder()));
-		$pom = $serializer->decode($xml, 'xml');
+		try {
+			$serializer = new Serializer(array(new GetSetMethodNormalizer()), array(new XmlEncoder()));
+			$pom = $serializer->decode($xml, 'xml');
+		} catch (\Symfony\Component\Serializer\Exception\UnexpectedValueException $e) {
+			return;
+		}
 		
 		// Get dependencies
 		if (!empty($pom['dependencies']) && !empty($pom['dependencies']['dependency'])) {
 			$src = $pom['dependencies']['dependency'];
-			if (!isset($src[0]))
+			if (!is_array($src) || !isset($src[0]))
 				$src = array($src);
 			foreach ($src as $v)
 				$package->data[AbstractPlatform::PKG_DEPENDENCIES][$v['groupId'] . ':' . $v['artifactId']] = empty($v['version']) ? '' : $v['version'];
@@ -119,7 +123,7 @@ class Maven extends AbstractPlatform {
 		// Get license
 		if (!empty($pom['licenses']) && !empty($pom['licenses']['license'])) {
 			$src = $pom['licenses']['license'];
-			if (!isset($src[0]))
+			if (!is_array($src) || !isset($src[0]))
 				$src = array($src);
 			$package->data[AbstractPlatform::PKG_LICENSE] = join(', ', array_map(function($v) {
 				return !empty($v['name']) ? $v['name'] : null;

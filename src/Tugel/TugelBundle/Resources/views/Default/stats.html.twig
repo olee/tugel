@@ -1,11 +1,26 @@
 {% extends "TugelBundle::layout.html.twig" %}
 
+{% import "TugelBundle:Form:accordion.html.twig" as accordion %}
+
 {% block content %}
 {{ parent() }}
 <div class="container">
+	<h1>Statistics</h1>
 	
-	{% for id,platform in platforms %}
-		<h2>{{ id|capitalize }}</h2>
+	{{ accordion.start('Licenses') }}
+{#
+<pre>{% for package in licenses %}
+{{ package.license ? package.license|capitalize : 'NONE' }}
+{% endfor %}</pre>
+#}
+		<ul>
+{% for pkg in licenses if pkg._count > 4 %}
+			<li><span class="badge">{{ pkg._count }}</span> <a href="{{ path('search', {q:'license:' ~ pkg.license}) }}">{{ pkg.license ? pkg.license : 'NONE' }}</a>
+{% endfor %}
+		</ul>
+	
+{% for id,platform in platforms %}
+		{{ accordion.tab(id|capitalize) }}
 		<div>Package count: {{ platform.count }}</div>
 		<div>Indexed package count: {{ platform.indexed_count }}</div>
 		<div>Error package count: {{ platform.error_count }}</div>
@@ -59,8 +74,8 @@
 				</tbody>
 			</table>
 		</div>
-		<hr>
-	{% endfor %}
+{% endfor %}
+	{{ accordion.end() }}
 </div>
 	
 {% endblock %}

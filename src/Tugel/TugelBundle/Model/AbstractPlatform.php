@@ -45,7 +45,14 @@ abstract class AbstractPlatform {
 	const PKG_LICENSE = 'license';
 	const PKG_DEPENDENCIES = 'dependency';
 
-	public $ERROR_MESSAGES = array(AbstractPlatform::ERR_PACKAGE_NOT_FOUND => 'Package not found', AbstractPlatform::ERR_VERSION_NOT_FOUND => 'Version not found', AbstractPlatform::ERR_DOWNLOAD_ERROR => 'Download failed', AbstractPlatform::ERR_OTHER_ERROR => 'Unknown error', AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND => 'Download not found', AbstractPlatform::ERR_NEEDS_REINDEXING => 'Needs reindexing', );
+	public $ERROR_MESSAGES = array(
+		AbstractPlatform::ERR_PACKAGE_NOT_FOUND => 'Package not found', 
+		AbstractPlatform::ERR_VERSION_NOT_FOUND => 'Version not found', 
+		AbstractPlatform::ERR_DOWNLOAD_ERROR => 'Download failed', 
+		AbstractPlatform::ERR_OTHER_ERROR => 'Unknown error', 
+		AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND => 'Download not found', 
+		AbstractPlatform::ERR_NEEDS_REINDEXING => 'Needs reindexing',
+	);
 
 	/**
 	 * @var EntityManagerInterface
@@ -221,8 +228,20 @@ abstract class AbstractPlatform {
 			$package->setDescription($package->data[AbstractPlatform::PKG_DESCRIPTION]);
 
 		// Get license
-		if (!empty($package->data[AbstractPlatform::PKG_LICENSE]))
-			$package->setLicense($package->data[AbstractPlatform::PKG_LICENSE]);
+		if (!empty($package->data[AbstractPlatform::PKG_LICENSE])) {
+			$license = ($package->data[AbstractPlatform::PKG_LICENSE]);
+			
+			$license = str_replace('-', ' ', $license);
+			$license = preg_replace('/(^|[^\w\n\/]|\d)((?:' . join(')|(?:', array('style', 'clause', 'license', 'version', 'the')) . '))(?=[^\w\.]|$)/mi', '$1', $license);
+			$license = preg_replace('/\s*v\s*([\d\.]+)/', ' $1', $license);
+			$license = preg_replace('/([^\d\s\.])(\d)/', '$1 $2', $license);
+			$license = preg_replace('/\s*,\s*\n/', '\n', $license);
+			$license = preg_replace('@\n.*@', '', $license);
+			$license = preg_replace('/\s*v\s*([\d\.]+)(?=[^\w])/', ' $1', $license);
+			$license = preg_replace('/(\s|^)\s+/', '$1', $license);
+			
+			$package->setLicense(trim($license));
+		}
 
 		// Get dependencies
 		$package->getDependencies()->clear();

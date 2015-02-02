@@ -60,20 +60,20 @@ class Hackage extends AbstractPlatform {
 		$package->data = array();
 		
 		// Get version
-		if (!preg_match('@^version\s*:\s*([^\s]+)@mi', $src, $matches)) {
+		if (!preg_match('@^version\s*:\s*(.*(?:\r?\n[ \t]+.*)*)@mi', $src, $matches)) {
 			//print_r($src); exit;
 			return AbstractPlatform::ERR_PACKAGEDATA_NOT_FOUND;
 		}
 		$package->data[AbstractPlatform::PKG_VERSION] = $matches[1];
 		
 		// Get description
-		if (preg_match('@^description\s*:\s*(.*(?:.*\r?\n\s+)*)@mi', $src, $matches)) {
+		if (preg_match('@^description\s*:\s*(.*(?:\r?\n[ \t]+.*)*)@mi', $src, $matches)) {
 			$desc = $matches[1];
 			$package->data[AbstractPlatform::PKG_DESCRIPTION] = preg_replace('@\n\s+\.?@', "\n", $desc);
 		}
 		
 		// Get license
-		if (preg_match('@^license\s*:\s*(.*(?:.*\r?\n\s+)*)@mi', $src, $matches)) {
+		if (preg_match('@^license\s*:\s*(.*(?:\r?\n[ \t]+.*)*)@mi', $src, $matches)) {
 			$desc = $matches[1];
 			$package->data[AbstractPlatform::PKG_LICENSE] = preg_replace('@\n\s+\.?@', ", ", $desc);
 		}
