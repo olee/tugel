@@ -40,7 +40,7 @@
 					{% for package in platform.last_added %}
 					<tr>
 						<td>{{ package.id }}</td>
-						<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
+						<td><a href="{{ package.url }}">{{ package.name }}</a></td>
 						<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
 						<td>{{ package.version }}</td>
 						<td class="desc">{{ package.description|raw }}</td>
@@ -65,7 +65,7 @@
 					{% for package in platform.last_indexed %}
 					<tr>
 						<td>{{ package.id }}</td>
-						<td><a target="_blank" href="{{ package.url }}">{{ package.name }}</a></td>
+						<td><a href="{{ package.url }}">{{ package.name }}</a></td>
 						<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
 						<td>{{ package.version }}</td>
 						<td class="desc">{{ package.description|raw }}</td>

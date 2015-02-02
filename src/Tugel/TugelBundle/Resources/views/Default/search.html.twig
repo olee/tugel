@@ -6,11 +6,11 @@
 	{% set q = 'library ' ~ (query.platform is defined ? query.platform ~ ' ' : '') ~ (query.language is defined ? query.language ~ ' ' : '') ~ query.query %}
 	{% set q = q|url_encode %}
 	<div style="font-weight:bold;"> |
-		<a target="_blank" href="http://google.com/search?q={{ q }}">Google</a> |
-		<a target="_blank" href="http://bing.com/search?q={{ q }}">Bing</a> |
-		<a target="_blank" href="https://packagist.org/search/?q={{ query.query|url_encode }}">Packagist</a> |
-		<a target="_blank" href="http://hackage.haskell.org/packages/search?terms={{ query.query|url_encode }}">Hackage</a> |
-		<a target="_blank" href="https://pypi.python.org/pypi?%3Aaction=search&term={{ query.query|url_encode }}">PyPi</a> |
+		<a href="http://google.com/search?q={{ q }}">Google</a> |
+		<a href="http://bing.com/search?q={{ q }}">Bing</a> |
+		<a href="https://packagist.org/search/?q={{ query.query|url_encode }}">Packagist</a> |
+		<a href="http://hackage.haskell.org/packages/search?terms={{ query.query|url_encode }}">Hackage</a> |
+		<a href="https://pypi.python.org/pypi?%3Aaction=search&term={{ query.query|url_encode }}">PyPi</a> |
 	</div>
 {% if query.platform is defined or query.language is defined %}
 	<h3>{% if query.platform is defined %}Platform: {{ query.platform }}{% endif %} {% if query.language is defined %}Language: {{ query.language }}{% endif %}</h3>
@@ -28,7 +28,7 @@
 			<div>
 				<span class="pkg_platform">{{ package.platform.name }}</span>
 				<span class="pkg_version">{{ package.version }}</span> 
-				<a class="pkg_google" target="_blank" href="https://google.com/search?q={{ package.name|replace({'com.':'', '.': ' ', ':': ' ', '-': ' '})|url_encode }}">G</a>
+				<a class="pkg_google" href="https://google.com/search?q={{ package.name|replace({'com.':'', '.': ' ', ':': ' ', '-': ' '})|url_encode }}">G</a>
 			</div>
 			<p>{{ package.description[:250] ~ '...' }}</p>
 		</li>
