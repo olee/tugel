@@ -15,7 +15,7 @@
 #}
 		<ul>
 {% for pkg in licenses if pkg._count > 4 %}
-			<li><span class="badge">{{ pkg._count }}</span> <a href="{{ path('search', {q:'license:' ~ pkg.license}) }}">{{ pkg.license ? pkg.license : 'NONE' }}</a>
+			<li><span class="badge">{{ pkg._count }}</span> <a href="{{ path('search', {q:'license:\'' ~ pkg.license ~ '\''}) }}">{{ pkg.license ? pkg.license : 'NONE' }}</a>
 {% endfor %}
 		</ul>
 	
