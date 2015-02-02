@@ -42,9 +42,6 @@ fos_elastica:
                         description:
                           type: "string"
                           store: "yes"
-                        codeTagsMaximum:
-                          type: "integer"
-                          store: "yes"
                         codeTagsText:
                           type: "string"
                           store: "no"
@@ -59,6 +56,9 @@ fos_elastica:
                             name: 
                               type: "string"
                               store: "yes"
+                        codeTagsMaximum:
+                          type: "integer"
+                          store: "yes"
 #                        codeTags:
 #                          type: "object"
 #                          store: "yes"

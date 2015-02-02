@@ -35,6 +35,11 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
 		<service id="monolog.formatter.simple_line" class="Monolog\Formatter\LineFormatter">
 			<argument>[%%datetime%%] %%level_name%%: %%message%%&#xA;</argument>
 		</service>
+        
+        <service id="tugel.exception_listener" class="Tugel\TugelBundle\Event\ExceptionListener">
+            <argument type="service" id="tugel.logger" />
+            <tag name="kernel.event_listener" event="console.exception" />
+        </service>
 
 		<!-- - - - - - - - - - - - - - - - - - - - - -->
 		<service id="tugel.package_manager" class="%tugel.package_manager.class%">
