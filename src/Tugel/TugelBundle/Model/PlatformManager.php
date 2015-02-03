@@ -28,7 +28,7 @@ class PlatformManager {
 	 * @return AbstractPlatform
 	 */
 	public function getPlatform($name) {
-		return $this->platforms[$name];
+		return isset($this->platforms[$name]) ? $this->platforms[$name] : null;
 	}
 
 }

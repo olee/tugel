@@ -135,8 +135,14 @@ EOM;
 
 	public function index($indexPlatform = null, $package = null, $maxTime = 1800, $printCachesize = false, $quick = false, $dry = false) {
 		if ($indexPlatform) {
-			if (!is_object($indexPlatform))
-				$indexPlatform = $this->getPlatformManager()->getPlatform($indexPlatform);
+			if (!is_object($indexPlatform)) {
+				$platformName = $indexPlatform;
+				$indexPlatform = $this->getPlatformManager()->getPlatform($platformName);
+				if (!$indexPlatform) {
+					$this->log(sprintf('platform %s not found not found', $platformName), Logger::ERROR);
+					return false;
+				}
+			}
 
 			if ($package) {
 				if (!is_object($package)) {
@@ -206,7 +212,9 @@ EOM;
 			$qb->andWhere('pkg.platform = ' . $platform->getPlatformReference()->getId());
 		}
 		
-		if (!$errors)
+		if ($errors)
+			$qb->andWhere('pkg.error IS NOT NULL');
+		else
 			$qb->andWhere('pkg.error IS NULL');
 		
 		$qb->getQuery()->execute();
@@ -385,15 +393,17 @@ EOM;
 			if (!empty($query['platform'])) {
 				$platform = $query['platform'];
 				if (is_string($platform)) {
-					$platform = $this->getPlatformManager()->getPlatform($platform);
+					$platform = $this->getPlatformManager()->getPlatform($platformName = $platform);
 					if ($platform)
-						$platform = $platform->getPlatformEntity();
+						$platform = $platform->getPlatformReference()->getId();
+					else
+						$platform = $platformName;
 				}
-				if (!empty($platform)) {
-					$term = new ESQ\Term();
-					$term->setTerm('platform.id', is_object($platform) ? $platform->getId() : $platform);
-					$q->addMust($term);
-				}
+				if (!is_numeric($platform))
+					$platform = 0;
+				$term = new ESQ\Term();
+				$term->setTerm('platform.id', is_object($platform) ? $platform->getId() : $platform);
+				$q->addMust($term);
 			}
 			
 			if (!empty($query['depends'])) {

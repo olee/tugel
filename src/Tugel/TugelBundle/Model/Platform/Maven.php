@@ -113,7 +113,8 @@ class Maven extends AbstractPlatform {
 			if (!is_array($src) || !isset($src[0]))
 				$src = array($src);
 			foreach ($src as $v)
-				$package->data[AbstractPlatform::PKG_DEPENDENCIES][$v['groupId'] . ':' . $v['artifactId']] = empty($v['version']) ? '' : $v['version'];
+				if (isset($v['groupId']) && isset($v['artifactId']))
+					$package->data[AbstractPlatform::PKG_DEPENDENCIES][$v['groupId'] . ':' . $v['artifactId']] = empty($v['version']) ? '' : $v['version'];
 		}
 		
 		if (isset($pom['name'])) {
