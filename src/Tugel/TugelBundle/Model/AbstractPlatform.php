@@ -16,7 +16,8 @@ use Tugel\TugelBundle\Model\Language;
 
 use Tugel\TugelBundle\Entity\Platform as Platform;
 use Tugel\TugelBundle\Entity\Package;
-use Tugel\TugelBundle\Entity\CodeTag;
+use Tugel\TugelBundle\Entity\Tag;
+use Tugel\TugelBundle\Entity\PackageTag;
 
 use Tugel\TugelBundle\Util\Utils;
 
@@ -90,6 +91,11 @@ abstract class AbstractPlatform {
 	protected $packageRepo;
 
 	/**
+	 * @var EntityRepository
+	 */
+	protected $tagRepo;
+
+	/**
 	 * @var QueryBuilder
 	 */
 	protected $packageQb;
@@ -103,13 +109,14 @@ abstract class AbstractPlatform {
 		$this->languageManager = $languageManager;
 		$this->platformRepo = $this->getEntityManager()->getRepository('TugelBundle:Platform');
 		$this->packageRepo = $this->getEntityManager()->getRepository('TugelBundle:Package');
+		$this->tagRepo = $this->getEntityManager()->getRepository('TugelBundle:Tag');
 		
 		$this->packageQb = $this->packageRepo->createQueryBuilder('e');
 		$this->packageQb->where('e.platform = ?1');
 		$this->packageQb->andWhere('e.name = ?2');
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function crawlPlatform() {
 		$this->getLogger()->notice('> started crawling platform ' . $this->getName());
@@ -310,7 +317,7 @@ abstract class AbstractPlatform {
 		$package->setClasses($index->getClassesString());
 		$package->setNamespaces($index->getNamespacesString());
 		$package->setLanguages($index->getLanguagesString());
-		$package->setCodeTagsText($index->getTagsString());
+		$package->setTagsText($index->getTagsString());
 		
 		{
 			$tags = array();
@@ -319,25 +326,24 @@ abstract class AbstractPlatform {
 				Utils::array_add($tags, strtolower($tag));
 			}
 
-			$max = 0;
-			foreach ($tags as $count)
-				$max = max($count, $max);
-			foreach ($tags as &$count)
-				$count /= $max;
-			$package->setCodeTagsMaximum($max);
-
-			foreach ($package->getCodeTags() as $tag) {
+			foreach ($package->getTags() as $tag) {
 				if (array_key_exists($tag->getName(), $tags)) {
 					$tag->setCount($tags[$tag->getName()]);
 					unset($tags[$tag->getName()]);
 				} else {
-					$package->removeCodeTag($tag);
+					$package->removeTag($tag);
 					$this->getEntityManager()->remove($tag);
 				}
 			}
 		
-			foreach ($tags as $tag => $count)
-				$package->addCodeTag(new CodeTag($package, $tag, $count));
+			foreach ($tags as $tag => $count) {
+				$tagEnt = $this->tagRepo->findOneByName($tag);
+				if (!$tagEnt) {
+					$tagEnt = new Tag($tag);
+					if (!$dry) $this->getEntityManager()->flush();
+				}
+				$package->addTag(new PackageTag($package, $tagEnt, $count));
+			}
 		}
 	}
 
@@ -359,7 +365,7 @@ abstract class AbstractPlatform {
 		$this->getLogger()->log($logLevel, $msg);
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public abstract function getName();
 
@@ -379,7 +385,7 @@ abstract class AbstractPlatform {
 
 	public abstract function getPackageUrl(Package $package);
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @return array (integer)
@@ -410,7 +416,7 @@ abstract class AbstractPlatform {
 		)->getQuery()->getOneOrNullResult();
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function httpGet($url) {
 		$ch = curl_init();
@@ -554,7 +560,7 @@ abstract class AbstractPlatform {
 		return $files;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @return EntityManager
@@ -603,7 +609,7 @@ abstract class AbstractPlatform {
 		return $this->platformReference;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 }
 
 function array_get($array, $index) {

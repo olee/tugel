@@ -11,20 +11,15 @@
 <div class="main-search">
 	<div>
 		<h2>Tugel</h2>
-		{{ form_start(searchForm, {attr:{class:''}}) }}
-			<div class="input-group">
-				{{ form_widget(searchForm.q, {id:'search_input', attr:{class:'form-control', style:'min-width:215px;'}}) }}
-				<div class="input-group-btn">
-					{{ form_widget(searchForm.submit, {attr:{class:''}}) }}
-				</div>
-			</div>
-		{{ form_end(searchForm) }}
+		{% include "TugelBundle::searchForm.html.twig" with {navbar:false} %}
+		{#
 		<ol>
 			<li><a href="{{ path('search_platform', {platform:'packagist'}) }}">Packagist</a></li>
 			<li><a href="{{ path('search_platform', {platform:'hackage'}) }}">Hackage</a></li>
 			<li><a href="{{ path('search_platform', {platform:'pypi'}) }}">PyPi</a></li>
 			<li><a href="{{ path('search_platform', {platform:'maven'}) }}">Maven</a></li>
 		</ol>
+		#}
 	</div>
 </div>
 

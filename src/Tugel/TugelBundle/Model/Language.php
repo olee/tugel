@@ -19,7 +19,7 @@ abstract class Language {
 		return !$filename || substr(strtolower($filename), -strlen($this->getExtension())) === $this->getExtension();
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public abstract function analyzeProvide(Index $index, $path, $file);
 

@@ -9,6 +9,7 @@
 {% if package.license is not empty %}
 	<h4>License: {{ package.license }}</h4>
 {% endif %}
+	<h5>ID: {{ package.id }}</h5>
 
 	<div class="panel-group accordion" id="accordion" role="tablist" aria-multiselectable="true">
 		<div class="panel panel-default">
@@ -55,23 +56,15 @@
 		</div>
 		<div class="panel panel-default">
 			<a class="panel-heading" role="tab" id="tagsHeading">
-    			<span class="badge">{{ package.codeTags|length }}</span>
+    			<span class="badge">{{ package.tags|length }}</span>
 				<h4 class="panel-title">Tags</h4>
 			</a>
 			<div id="tags" class="panel-collapse collapse" role="tabpanel">
 				<div class="panel-body">
 					<ul>
-						{% for tag in package.codeTags %}
-						<li>
-							{{ (tag.count * package.codeTagsMaximum)|round }} - {{ tag.name }}
-							{#% endfor %}
-						<li>
-							-----------------------------------------------
-						</li>
-						{% for tag in package.codeTagsText|split(' ')|sort %}
-						<li>
-							{{ tag }#}
-							{% endfor %}
+						{% for tag in package.tags %}
+							<li>{{ tag.count }} - {{ tag.name }}
+						{% endfor %}
 					</ul>
 				</div>
 			</div>

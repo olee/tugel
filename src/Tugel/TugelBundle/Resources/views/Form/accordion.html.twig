@@ -1,16 +1,16 @@
 
-{% macro start(title, id) %}{% spaceless %}
+{% macro start(title, id, expanded) %}{% spaceless %}
 {% if id is empty %}{% set id = title %}{% endif %}
 <div class="panel-group accordion" id="accordion" role="tablist" aria-multiselectable="true">
 	<div class="panel panel-default">
 		<a class="panel-heading" role="tab" id="{{ id }}_heading">
 			<h4 class="panel-title">{{ title|raw }}</h4>
 		</a>
-		<div id="{{ id }}" class="panel-collapse collapse in" role="tabpanel">
+		<div id="{{ id }}" class="panel-collapse collapse{{ expanded ? ' in' : ''}}" role="tabpanel">
 			<div class="panel-body">
 {% endspaceless %}{% endmacro %}
 
-{% macro tab(title, id) %}{% spaceless %}
+{% macro tab(title, id, expanded) %}{% spaceless %}
 {% if id is empty %}{% set id = title %}{% endif %}
 			</div>
 		</div>
@@ -19,7 +19,7 @@
 		<a class="panel-heading collapsed" role="tab" id="{{ id }}_heading">
 			<h4 class="panel-title">{{ title|raw }}</h4>
 		</a>
-		<div id="{{ id }}" class="panel-collapse collapse" role="tabpanel">
+		<div id="{{ id }}" class="panel-collapse collapse{{ expanded ? ' in' : ''}}" role="tabpanel">
 			<div class="panel-body">
 {% endspaceless %}{% endmacro %}
 

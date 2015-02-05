@@ -41,7 +41,7 @@ class PyPi extends AbstractPlatform {
 		@unlink($path . $fn);
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function getName() {
 		return 'pypi';

@@ -5,6 +5,7 @@ namespace Tugel\TugelBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Cache;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -31,37 +32,32 @@ class DefaultController extends ControllerHelperNT {
 	 * @Route("/", name="home")
 	 * @Template
 	 */
-	public function indexAction(Request $request) {
-		$params = $this->handleQueryForm($request);
-		if ($params instanceof Response)
-			return $params;
-		
-		return $params;
+	public function indexAction() {
+		return array();
 	}
 	
 	/**
 	 * @Route("/search", name="search")
 	 * @Template
+	 * @Cache(expires="+1 days", public=true)
 	 */
 	public function searchAction(Request $request) {
-		$data = $request->query->all();
-		if (empty($data['q']))
+		if (!$request->query->has('q'))
 			return $this->redirect($this->generateUrl('home'));
+		$q = $request->query->get('q');
 		
-		$params = $this->handleQueryForm($request, $data);
-		if ($params instanceof Response)
-			return $params;
+		if ($request->query->has('platform'))
+			$q .= ' platform:' . $request->query->get('platform');
 		
-		if (!empty($data['q'])) {
-			$pm = $this->getPackageManager();
-			$query = $pm->parseQuery($data['q']);
-			$results = $pm->find($query, 10, $request->query->get('page', 0) * 10);
-			
-			$params['results'] = $results;
-			$params['query'] = $query;
-			$params['el_query'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
-			$params['time'] = $pm->lastQueryTime;
-		}
+		$pm = $this->getPackageManager();
+		$query = $pm->parseQuery($q);
+		$results = $pm->find($query, 20, $request->query->get('page', 0) * 20);
+		$params = array(
+			'results' => $results,
+			'query' => $query,
+			'el_query' => json_encode($pm->lastQuery, JSON_PRETTY_PRINT),
+			'time' => $pm->lastQueryTime
+		);
 		return $this->render('TugelBundle:Default:search.html.twig', $params);
 	}
 	
@@ -70,24 +66,20 @@ class DefaultController extends ControllerHelperNT {
 	 * @Template
 	 */
 	public function searchPlatformAction(Request $request, $platform) {
-		$data = $request->query->all();
-		$params = $this->handleQueryForm($request, $data);
-		if ($params instanceof Response)
-			return $params;
-		
-		if (empty($data['q']))
-			$params['query'] = array('platform' => $platform);
-		
-		if (!empty($data['q'])) {
+		if (!$request->query->has('q')) {
+			$params = array('query' => array('platform' => $platform));
+		} else {
 			$pm = $this->getPackageManager();
-			$query = $pm->parseQuery($data['q']);
+			$query = $pm->parseQuery($q);
 			$query['platform'] = $platform;
-			$results = $pm->find($query, 10, $request->query->get('page', 0) * 10);
+			$results = $pm->find($query, 20, $request->query->get('page', 0) * 20);
+			$params = array(
+				'results' => $results,
+				'query' => $query,
+				'el_query' => json_encode($pm->lastQuery, JSON_PRETTY_PRINT),
+				'time' => $pm->lastQueryTime
+			);
 			
-			$params['results'] = $results;
-			$params['query'] = $query;
-			$params['el_query'] = json_encode($pm->lastQuery, JSON_PRETTY_PRINT);
-			$params['time'] = $pm->lastQueryTime;
 		}
 		return $this->render('TugelBundle:Default:search.html.twig', $params);
 	}
@@ -96,11 +88,7 @@ class DefaultController extends ControllerHelperNT {
 	 * @Route("/info/{id}", name="info", requirements={"id"="\d+"})
 	 * @Template
 	 */
-	public function infoAction(Request $request, $id = null) {
-		$params = $this->handleQueryForm($request);
-		if ($params instanceof Response)
-			return $params;
-
+	public function infoAction($id = null) {
 		if ($id == null)
 			return $this->redirect($this->generateUrl('home'));
 		
@@ -108,19 +96,14 @@ class DefaultController extends ControllerHelperNT {
 		if (!$package)
 			return $this->redirect($this->generateUrl('home'));
 		
-		$params['package'] = $package;
-		return $params;
+		return array('package' => $package);
 	}
 		
 	/**
 	 * @Route("/info/{platform}/{package}", name="info_named", requirements={"package"=".*"})
 	 * @Template
 	 */
-	public function infoNamedAction(Request $request, $platform, $package) {
-		$params = $this->handleQueryForm($request);
-		if ($params instanceof Response)
-			return $params;
-		
+	public function infoNamedAction($platform, $package) {
 		//echo "$platform\n$package\n"; exit;
 		if ($platform == null || $package == null)
 			return $this->redirect($this->generateUrl('home'));
@@ -130,8 +113,7 @@ class DefaultController extends ControllerHelperNT {
 		if (!$pkg)
 			return $this->redirect($this->generateUrl('home'));
 		
-		$params['package'] = $pkg;
-		return $this->render('TugelBundle:Default:info.html.twig', $params);
+		return $this->render('TugelBundle:Default:info.html.twig', array('package' => $pkg));
 	}
 	
 	/**
@@ -145,8 +127,12 @@ class DefaultController extends ControllerHelperNT {
 				'message' => 'Missing query',
 			); 
 		} else {
+			$q = $request->query->get('q');
+			if ($request->query->has('platform'))
+				$q .= ' platform:' . $request->query->get('platform');
+			
 			$pm = $this->getPackageManager();
-			$query = $pm->parseQuery($request->query->get('q'));
+			$query = $pm->parseQuery($q);
 			if ($request->query->has('g'))
 				$groups[] = strtolower($request->query->get('g'));
 			$results = $pm->find($query, $request->query->get('c', 10), $request->query->get('p', 0) * $request->query->get('c', 10));
@@ -167,22 +153,16 @@ class DefaultController extends ControllerHelperNT {
 	 * @Route("/stats", name="stats")
 	 * @Template
 	 */
-	public function statsAction(Request $request) {
-		$params = $this->handleQueryForm($request);
-		if ($params instanceof Response)
-			return $params;
-		return array_merge($params, $this->getPackageManager()->getStats());
+	public function statsAction() {
+		return $this->getPackageManager()->getStats();
 	}
 
 	/**
 	 * @Route("/about", name="about")
 	 * @Template
 	 */
-	public function aboutAction(Request $request) {
-		$params = $this->handleQueryForm($request);
-		if ($params instanceof Response)
-			return $params;
-		return $params;
+	public function aboutAction() {
+		return array();
 	}
 
 	/**
@@ -197,21 +177,6 @@ class DefaultController extends ControllerHelperNT {
 		return new Response($html);
 	}
 
-	public function handleQueryForm(Request $request, $data = null) {
-		$form = $this->createForm(new SimpleSearchType(), $data);
-		if ('POST' === $request->getMethod()) {
-			$form->handleRequest($request);
-			if ($form->isValid()) {
-				$data = $form->getData();
-				if (empty($data['q']))
-					return $this->redirect($this->generateUrl('home'));
-				return $this->redirect($this->generateUrl('search', $data));
-			}
-		} else {
-			return array('searchForm' => $form->createView());
-		}
-	}
-	
 	/**
 	 * @return PackageManager
 	 */

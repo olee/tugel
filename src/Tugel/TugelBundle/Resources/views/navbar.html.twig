@@ -15,28 +15,8 @@
 		<div class="navbar-collapse" style="height: 1px;">
 			{% spaceless %}
 			<ul class="nav navbar-nav">
-				{% if searchForm is defined and not hideNavbarSearch is defined %}
-				<li>
-					{{ form_start(searchForm, {attr:{class:'navbar-nav navbar-form', style:'max-width:490px;'}}) }}
-						<div class="input-group">
-							{{ form_widget(searchForm.q, {id:'search_input', attr:{class:'form-control', style:'min-width:215px;'}}) }}
-							<div class="input-group-btn" role="group">
-								{{ form_widget(searchForm.submit, {attr:{class:''}}) }}
-								{#
-								<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-									<span class="caret"></span>
-									<span class="sr-only">Toggle Dropdown</span>
-								</button>
-								<ul class="dropdown-menu" role="menu">
-									<li><a href="/app_dev.php/modconf/452/replace/1735/page">Eigene Seite</a></li>
-									<li><a href="/app_dev.php/modconf/452/replace/1735/calendar">Kalender</a></li>
-									<li><a href="/app_dev.php/modconf/452/replace/1735/ruling">Lineatur</a></li>
-								</ul>
-								#}
-							</div>
-						</div>
-					{{ form_end(searchForm) }}
-				</li>
+				{% if not hideNavbarSearch is defined %}
+				<li>{% include "TugelBundle::searchForm.html.twig" with {navbar:true} %}</li>
 				{% endif %}
 			</ul>
 			<ul class="nav navbar-nav navbar-right">

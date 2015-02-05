@@ -70,7 +70,7 @@ EOM;
 	/**
 	 * @var EntityRepository
 	 */
-	private $codeTagRepository;
+	private $tagRepository;
 
 	/**
 	 * @var FinderInterface
@@ -107,7 +107,7 @@ EOM;
 		
 		$this->finderHelper = new TransformedFinderHelper($this->finder);
 		$this->packageRepository = $this->getEntityManager()->getRepository('TugelBundle:Package');
-		$this->codeTagRepository = $this->getEntityManager()->getRepository('TugelBundle:CodeTag');
+		$this->tagRepository = $this->getEntityManager()->getRepository('TugelBundle:Tag');
 		
 		$sm = $this->getEntityManager()->getConnection()->getSchemaManager();
 		if (!$this->viewExists('new_packages')) {
@@ -122,7 +122,7 @@ EOM;
 		}
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function crawlPlatforms() {
 		$this->log('started crawling platforms', null, Logger::NOTICE);
@@ -200,7 +200,7 @@ EOM;
 		if ($force)
 			$qb->set('pkg.error', AbstractPlatform::ERR_NEEDS_REINDEXING);
 		if ($clear)
-			$qb->set('pkg.classes', null)->set('pkg.namespaces', null)->set('pkg.codeTagsText', null)->set('pkg.languages', null)->set('pkg.codeTagsMaximum', null);
+			$qb->set('pkg.classes', null)->set('pkg.namespaces', null)->set('pkg.tagsText', null)->set('pkg.languages', null)->set('pkg.codeTagsMaximum', null);
 		
 		if ($platform) {
 			if (!is_object($platform))
@@ -253,7 +253,6 @@ EOM;
 				$this->getEntityManager()->flush();
 				$this->getEntityManager()->clear();
 				// $this->packageRepository->clear();
-				// $this->codeTagRepository->clear();
 			}
 			
 			if ($endTime && time() >= $endTime) {
@@ -300,6 +299,27 @@ EOM;
 			->addOrderBy('_count', 'DESC') //
 			->addOrderBy('pkg.license', 'ASC') //
 			->getQuery()->getResult();
+		
+		/*
+		echo $this->getEntityManager()->getRepository('TugelBundle:CodeTag')->createQueryBuilder('tag')
+			->select('tag.name', 'SUM(tag.count)', 'IDENTITY(pkg.platform)') //
+			->join('TugelBundle:Package', 'pkg', 'WITH', 'pkg.id = tag.package') //
+			//->addGroupBy('pkg.platform') //
+			//->addGroupBy('tag.name') //
+			->addOrderBy('tag.count', 'DESC') //
+			->addOrderBy('tag.name', 'ASC') //
+			->setMaxResults(20) //
+			->getQuery()->getSql();
+		exit;
+		
+		$data['tags'] = $this->getEntityManager()->getRepository('TugelBundle:CodeTag')->createQueryBuilder('tag')
+			->select('tag.name', 'SUM(tag.count)') //
+			->groupBy('tag.name') //
+			->addOrderBy('tag.count', 'DESC') //
+			->addOrderBy('tag.name', 'ASC') //
+			->setMaxResults(20) //
+			->getQuery()->getResult();
+		*/
 
 		foreach ($this->getEntityManager()->getRepository('TugelBundle:Platform')->findAll() as $platform) {
 			$platformData = array();
@@ -335,7 +355,7 @@ EOM;
 		return $data;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function findPackagesBySource($filename, $src = null) {
 		if (!$src) {
@@ -380,7 +400,7 @@ EOM;
 		return $data;
 	}
 
-	public function find($query, $size = 25, $start = 0) {
+	public function find($query, $size = 20, $start = 0) {
 		if ($this->stopwatch)
 			$this->stopwatch->start('package_search');
 		
@@ -437,12 +457,10 @@ EOM;
 			}
 			
 			if (!empty($query['query'])) {
-				$match = new ESQ\Match();
-				$match->setFieldQuery('codeTagsText', $query['query']);
-				$q->addShould($match);
-				
-				$match = new ESQ\Match();
-				$match->setFieldQuery('description', $query['query']);
+				$match = new ESQ\MultiMatch();
+				$match->setQuery($query['query']);
+				$match->setFields(array('tagsText', 'description^2', 'name^3'));
+				$match->setType('most_fields');
 				$q->addShould($match);
 			}
 			$query = $q;
@@ -480,7 +498,7 @@ EOM;
 	}
 	
 
-	//*******************************************************************
+	/*******************************************************************/
 	
 	/**
 	 * @return QueryBuilder
@@ -531,7 +549,7 @@ EOM;
 		return $result;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 	
 	public function log($msg, $obj = null, $logLevel = Logger::INFO) {
 		if ($obj) {
@@ -552,7 +570,7 @@ EOM;
 		return array_key_exists($name, $this->getEntityManager()->getConnection()->getSchemaManager()->listViews());
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @return EntityManagerInterface
@@ -589,7 +607,7 @@ EOM;
 		return $this->packageRepository->find($id);
 	}
 	
-	//*******************************************************************
+	/*******************************************************************/
 	// Utility
 
 	public static function mergeIndex(&$index, $index2)

@@ -7,18 +7,20 @@
 <div class="container">
 	<h1>Statistics</h1>
 	
-	{{ accordion.start('Licenses') }}
-{#
-<pre>{% for package in licenses %}
-{{ package.license ? package.license|capitalize : 'NONE' }}
-{% endfor %}</pre>
-#}
+	{{ accordion.start('Licenses', 'licenses', false) }}
 		<ul>
 {% for pkg in licenses if pkg._count > 4 %}
 			<li><span class="badge">{{ pkg._count }}</span> <a href="{{ path('search', {q:'license:\'' ~ pkg.license ~ '\''}) }}">{{ pkg.license ? pkg.license : 'NONE' }}</a>
 {% endfor %}
 		</ul>
-	
+
+	{{ accordion.tab('Tags') }}
+		<ul>
+{#% for tag in tags if tag._count > 20 %}
+			<li><span class="badge">{{ tag.count }}</span> <a href="{{ path('search', {q:tag.name}) }}">{{ tag.name }}</a>
+{% endfor %#}
+		</ul>
+
 {% for id,platform in platforms %}
 		{{ accordion.tab(id|capitalize) }}
 		<div>Package count: {{ platform.count }}</div>

@@ -29,7 +29,7 @@ class Hackage extends AbstractPlatform {
 			return AbstractPlatform::ERR_DOWNLOAD_ERROR;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function getName() {
 		return 'hackage';

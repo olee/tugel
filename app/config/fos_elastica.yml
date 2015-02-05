@@ -1,90 +1,131 @@
 fos_elastica:
-    clients:
-        default: { host: localhost, port: 9200 }
-    indexes:
-        search:
-            index_name: tugel
-            settings:
-                index:
-                    analysis:
-                        analyzer:
-#                            default_index:
-#                                type: whitespace
-#                            default_search:
-#                                type: whitespace
-                            whitespace:
-                                type: whitespace
-                                lowercase: true
-                            identifier:
-                                type: pattern
-                                pattern: "[\\:\\.\\W\\\\]+"
-                                lowercase: false
-                            camelcase:
-                                type: pattern
-                                pattern: "([^\\p{L}\\d]+)|(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"
-                                lowercase: true
-            types:
-                package:
-                    indexable_callback: isIndexed
+  clients:
+    default:
+      host: localhost
+      port: 9200
+  indexes:
+      search:
+        index_name: tugel
+        settings:
+          index:
+              analysis:
+                filter:
+                  english_stop:
+                    type: stop
+                    stopwords: _english_
+                  light_english_stemmer:
+                    type: stemmer
+                    language: light_english
+                  english_possessive_stemmer:
+                    type: stemmer
+                    language: possessive_english
+                tokenizer:
+                  camelcase:
+                    type: pattern
+                    pattern: "([^\\p{L}\\d]+)|(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"
+                  version:
+                    type: path_hierarchy
+                    delimiter: "."
+                char_filter:
+                  version:
+                    type: mapping
                     mappings:
-                        id:
-                          type: "integer"
-                          store: "yes"
-                        platform.id:
-                          type: "integer"
-                          store: "yes"
-                        name:
-                          type: "string"
-                          store: "yes"
-                        version:
-                          type: "string"
-                          store: "yes"
-                        description:
-                          type: "string"
-                          store: "yes"
-                        codeTagsText:
-                          type: "string"
-                          store: "no"
-                          analyzer: "camelcase"
-                        dependencies:
-                          type: "object"
-                          store: "yes"
-                          properties:
-                            id:
-                              type: "integer"
-                              store: "yes"
-                            name: 
-                              type: "string"
-                              store: "yes"
-                        codeTagsMaximum:
-                          type: "integer"
-                          store: "yes"
-#                        codeTags:
-#                          type: "object"
-#                          store: "yes"
-#                          properties:
-#                            name:
-#                              type: "string"
-#                            count:
-#                              type: "float"
-                        license:
-                          type: "string"
-                          store: "yes"
-                        languages:
-                          type: "string"
-                          store: "no"
-                          analyzer: "whitespace"
-                        namespaces:
-                          type: "string"
-                          store: "no"
-                          analyzer: "identifier"
-                        classes:
-                          type: "string"
-                          store: "no"
-                          analyzer: "identifier"
-                    persistence:
-                        driver: orm
-                        model: Tugel\TugelBundle\Entity\Package
-                        provider: ~
-                        listener: ~
-                        finder: ~
+                      - "-=>."
+                      - "_=>."
+                analyzer:
+                  whitespace:
+                    type: whitespace
+                    lowercase: true
+                  identifier:
+                    type: pattern
+                    pattern: "[\\:\\.\\W\\\\]+"
+                    lowercase: false
+                  version:
+                    type: custom
+                    tokenizer: version
+                    char_filter: [ version ]
+                  camelcase:
+                    type: custom
+                    tokenizer: camelcase
+                    filter: [ lowercase ]
+                    alias:
+                      - default_index
+                      - default_search
+                  camelcase_english:
+                    type: custom
+                    tokenizer: camelcase
+                    filter:
+                      - english_possessive_stemmer
+                      - lowercase
+                      - light_english_stemmer
+                      - english_stop
+#                  default_index:
+#                      type: whitespace
+#                  default_search:
+#                      type: whitespace
+        types:
+          package:
+            indexable_callback: isIndexed
+            mappings:
+              id:
+                type: integer
+                store: yes
+              platform.id:
+                type: integer
+                store: yes
+              version:
+                type: string
+                store: yes
+                analyzer: version
+              name:
+                type: string
+                store: yes
+                analyzer: camelcase
+              description:
+                type: string
+                store: yes
+                analyzer: camelcase_english
+              tagsText:
+                type: multi_field
+                fields:
+                  tagsText:
+                    type: string
+                    store: no
+                    analyzer: camelcase
+                  tagsTextAnalyzed:
+                    type: string
+                    store: no
+                    analyzer: camelcase_english
+              dependencies:
+                type: object
+                store: yes
+                properties:
+                  id:
+                    type: integer
+                    store: yes
+                  name: 
+                    type: string
+                    store: yes
+                    analyzer: camelcase
+              license:
+                type: string
+                store: yes
+                analyzer: camelcase
+              languages:
+                type: string
+                store: no
+                analyzer: whitespace
+              namespaces:
+                type: string
+                store: no
+                analyzer: identifier
+              classes:
+                type: string
+                store: no
+                analyzer: identifier
+            persistence:
+              driver: orm
+              model: Tugel\TugelBundle\Entity\Package
+              provider: ~
+              listener: ~
+              finder: ~

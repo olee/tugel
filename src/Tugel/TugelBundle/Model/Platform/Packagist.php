@@ -48,7 +48,7 @@ class Packagist extends AbstractPlatform {
 			return AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function getName() {
 		return 'packagist';

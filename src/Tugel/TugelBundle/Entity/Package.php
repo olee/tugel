@@ -74,7 +74,7 @@ class Package {
 	 */
 	private $new;
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @var string
@@ -121,34 +121,26 @@ class Package {
 	 */
 	private $description;
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @var \Doctrine\Common\Collections\Collection
 	 *
-	 * @ORM\OneToMany(targetEntity="CodeTag", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
-	 * @ORM\OrderBy({"count" = "DESC", "name" = "ASC"})
+	 * @ORM\OneToMany(targetEntity="PackageTag", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
+	 * @ORM\OrderBy({"count" = "DESC"})
 	 * @JMS\Groups({"details"})
 	 */
-	private $codeTags;
-
-	/**
-	 * @var integer
-	 *
-	 * @ORM\Column(name="codetag_max", type="integer", nullable=true)
-	 * @JMS\Groups({"details"})
-	 */
-	private $codeTagsMaximum;
+	private $tags;
 
 	/**
 	 * @var string
 	 *
-	 * @ORM\Column(name="codetagstext", type="text", nullable=true)
+	 * @ORM\Column(name="tags", type="text", nullable=true)
 	 * @JMS\Exclude
 	 */
-	private $codeTagsText;
+	private $tagsText;
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @var string
@@ -158,7 +150,7 @@ class Package {
 	 */
 	private $license;
 
-	//*******************************************************************
+	/*******************************************************************/
 	
 	/**
 	 * @var string
@@ -183,7 +175,7 @@ class Package {
 	 */
 	private $languages;
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * @var float
@@ -204,10 +196,11 @@ class Package {
 	 */
 	public $data;
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	public function __construct() {
 		$this->codeTags = new \Doctrine\Common\Collections\ArrayCollection();
+		$this->tags = new \Doctrine\Common\Collections\ArrayCollection();
 		$this->dependencies = new \Doctrine\Common\Collections\ArrayCollection();
 		$this->dependencyOf = new \Doctrine\Common\Collections\ArrayCollection();
 		$this->new = true;
@@ -239,7 +232,7 @@ class Package {
 		return WEB_DIRECTORY . '../tmp/' . $this->getPlatform()->getName() . '/' . str_replace(':', '_', $this->getName()) . '/';
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Get id
@@ -250,7 +243,7 @@ class Package {
 		return $this->id;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set platform
@@ -272,7 +265,7 @@ class Package {
 		return $this->platform;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set name
@@ -294,7 +287,7 @@ class Package {
 		return $this->name;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set description
@@ -314,7 +307,7 @@ class Package {
 		return $this->description;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set addedDate
@@ -336,7 +329,7 @@ class Package {
 		return $this->addedDate;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set new
@@ -358,7 +351,7 @@ class Package {
 		return $this->new;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set version
@@ -380,7 +373,7 @@ class Package {
 		return $this->version;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set version reference
@@ -402,7 +395,7 @@ class Package {
 		return $this->versionReference;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set indexedDate
@@ -424,7 +417,7 @@ class Package {
 		return $this->indexedDate;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set error
@@ -446,8 +439,7 @@ class Package {
 		return $this->error;
 	}
 
-	//*******************************************************************
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set namespaces
@@ -469,7 +461,7 @@ class Package {
 		return $this->namespaces;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set classes
@@ -491,60 +483,38 @@ class Package {
 		return $this->classes;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
-	 * Add codeTags
+	 * Add packageTags
 	 *
-	 * @param \Tugel\TugelBundle\Entity\CodeTag $codeTags
+	 * @param \Tugel\TugelBundle\Entity\PackageTag $packageTags
 	 * @return Package
 	 */
-	public function addCodeTag(\Tugel\TugelBundle\Entity\CodeTag $codeTags) {
-		$this->codeTags[] = $codeTags;
+	public function addTag(\Tugel\TugelBundle\Entity\PackageTag $packageTags) {
+		$this->tags[] = $packageTags;
 		return $this;
 	}
 
 	/**
-	 * Remove codeTag
+	 * Remove packageTag
 	 *
-	 * @param \Tugel\TugelBundle\Entity\CodeTag $codeTag
+	 * @param \Tugel\TugelBundle\Entity\PackageTag $packageTag
 	 */
-	public function removeCodeTag(\Tugel\TugelBundle\Entity\CodeTag $codeTag) {
-		$this->codeTags->removeElement($codeTag);
+	public function removeTag(\Tugel\TugelBundle\Entity\PackageTag $packageTag) {
+		$this->tags->removeElement($packageTag);
 	}
 
 	/**
-	 * Get codeTags
+	 * Get packageTags
 	 *
 	 * @return \Doctrine\Common\Collections\Collection
 	 */
-	public function getCodeTags() {
-		return $this->codeTags;
+	public function getTags() {
+		return $this->tags;
 	}
 
-	//*******************************************************************
-
-	/**
-	 * Set codeTagsMaximum
-	 *
-	 * @param integer $codeTagsMaximum
-	 * @return Package
-	 */
-	public function setCodeTagsMaximum($codeTagsMaximum) {
-		$this->codeTagsMaximum = $codeTagsMaximum;
-		return $this;
-	}
-
-	/**
-	 * Get codeTagsMaximum
-	 *
-	 * @return integer
-	 */
-	public function getCodeTagsMaximum() {
-		return $this->codeTagsMaximum;
-	}
-
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set languages
@@ -566,29 +536,29 @@ class Package {
 		return $this->languages;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
-	 * Set codeTagsText
+	 * Set tagsText
 	 *
-	 * @param string $codeTagsText
+	 * @param string $tagsText
 	 * @return Package
 	 */
-	public function setCodeTagsText($codeTagsText) {
-		$this->codeTagsText = $codeTagsText;
+	public function setTagsText($tagsText) {
+		$this->tagsText = $tagsText;
 		return $this;
 	}
 
 	/**
-	 * Get codeTagsText
+	 * Get tagsText
 	 *
 	 * @return string
 	 */
-	public function getCodeTagsText() {
-		return $this->codeTagsText;
+	public function getTagsText() {
+		return $this->tagsText;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Add dependencies
@@ -619,7 +589,7 @@ class Package {
 		return $this->dependencies;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Add dependencyOf
@@ -650,7 +620,7 @@ class Package {
 		return $this->dependencyOf;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 	/**
 	 * Set license
@@ -672,6 +642,6 @@ class Package {
 		return $this->license;
 	}
 
-	//*******************************************************************
+	/*******************************************************************/
 
 }

@@ -1,0 +1,18 @@
+<form {% if navbar is defined and navbar %}class="navbar-nav navbar-form" style="max-width:490px;" {% endif %} id="search" action="{{ path('search') }}" method="get" name="search" onsubmit="return q.value!=''">
+	<div class="input-group">
+		<input type="text" style="min-width:215px;" class="form-control form-control" required="required" name="q" id="search_query" value="{{ app.request.query.get('q') }}">
+		<div class="input-group-btn">
+			<button class="btn-primary btn" type="submit" id="search_submit">Search</button>
+			<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+				<span class="caret"></span>
+				<span class="sr-only">Toggle Dropdown</span>
+			</button>
+			<ul class="dropdown-menu" role="menu">
+				<li><button type="submit" name="platform" value="packagist">Packagist</button></li>
+				<li><button type="submit" name="platform" value="hackage">Hackage</button></li>
+				<li><button type="submit" name="platform" value="pypi">PyPi</button></li>
+				<li><button type="submit" name="platform" value="maven">Maven</button></li>
+			</ul>
+		</div>
+	</div>
+</form>
