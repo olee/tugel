@@ -14,14 +14,14 @@ class TagPass implements CompilerPassInterface {
 			$definition = $container->getDefinition('tugel.platform_manager');
 			$taggedServices = $container->findTaggedServiceIds('tugel.platform');
 			foreach ($taggedServices as $id => $attributes)
-				$definition->addMethodCall('addPlatform', array(new Reference($id)));
+				$definition->addMethodCall('add', array(new Reference($id)));
 		}
 		
 		if ($container->hasDefinition('tugel.language_manager')) {
 			$definition = $container->getDefinition('tugel.language_manager');
 			$taggedServices = $container->findTaggedServiceIds('tugel.language');
 			foreach ($taggedServices as $id => $attributes)
-				$definition->addMethodCall('addLanguage', array(new Reference($id)));
+				$definition->addMethodCall('add', array(new Reference($id)));
 		}
 	}
 

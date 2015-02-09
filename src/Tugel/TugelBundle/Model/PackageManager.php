@@ -10,26 +10,25 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\DBAL\Schema\View;
 use Monolog\Logger;
 
+use FOS\ElasticaBundle\Finder\FinderInterface;
+use Elastica\Query as ESQ;
+use Elastica\Filter as ESF;
+use Elastica\Query\Filtered;
+use Elastica\Query\Bool;
+use Elastica\Query\Match;
+use Elastica\Query\MultiMatch;
+use Elastica\Filter\BoolAnd;
+use Elastica\Filter\AbstractMulti;
+use Elastica\Filter\Term as TermFilter;
+
 use ssko\UtilityBundle\Core\ContainerAwareHelperNT;
-
-use Tugel\TugelBundle\Util\Utils;
-
-use Tugel\TugelBundle\Model\AbstractPlatform;
-use Tugel\TugelBundle\Model\PlatformManager;
-use Tugel\TugelBundle\Model\Language;
-use Tugel\TugelBundle\Model\LanguageManager;
 
 use Tugel\TugelBundle\Entity\Platform;
 use Tugel\TugelBundle\Entity\Package;
-
-use FOS\ElasticaBundle\Finder\FinderInterface;
-use FOS\ElasticaBundle\Finder\TransformedFinder;
-
-use Elastica\Query as ESQ;
-use Elastica\Filter as ESF;
+use Tugel\TugelBundle\Util\Utils;
 
 class PackageManager {
-			
+	
 	const CODE_TAG_SCRIPT = <<<EOM
 sum = 0;
 for (tag in _source.codeTags) {
@@ -127,7 +126,7 @@ EOM;
 	public function crawlPlatforms() {
 		$this->log('started crawling platforms', null, Logger::NOTICE);
 		set_time_limit(60 * 60);
-		foreach ($this->getPlatformManager()->getPlatforms() as $platform) {
+		foreach ($this->getPlatformManager()->all() as $platform) {
 			$platform->crawlPlatform();
 		}
 		$this->log('finished crawling platforms', null, Logger::NOTICE);
@@ -137,7 +136,7 @@ EOM;
 		if ($indexPlatform) {
 			if (!is_object($indexPlatform)) {
 				$platformName = $indexPlatform;
-				$indexPlatform = $this->getPlatformManager()->getPlatform($platformName);
+				$indexPlatform = $this->getPlatformManager()->get($platformName);
 				if (!$indexPlatform) {
 					$this->log(sprintf('platform %s not found not found', $platformName), Logger::ERROR);
 					return false;
@@ -204,7 +203,7 @@ EOM;
 		
 		if ($platform) {
 			if (!is_object($platform))
-				$platform = $this->getPlatformManager()->getPlatform($platform);
+				$platform = $this->getPlatformManager()->get($platform);
 			if (!$platform) {
 				$this->log('platform not found', null, Logger::ERROR);
 				return false;
@@ -246,7 +245,7 @@ EOM;
 			}
 
 			// Start indexing
-			$platform = $this->getPlatformManager()->getPlatform($package->getPlatform()->getName());
+			$platform = $this->getPlatformManager()->get($package->getPlatform()->getName());
 			$platform->index($package, $quick, $dry);
 
 			if ($cnt++ % 10 == 0) {
@@ -265,7 +264,7 @@ EOM;
 
 	public function download($platform, $package, $version = null, $path = null) {
 		if (!is_object($platform)) {
-			$platform = $this->getPlatformManager()->getPlatform($platform);
+			$platform = $this->getPlatformManager()->get($platform);
 		}
 		if (!is_object($package)) {
 			$package = $platform->getPackage($package);
@@ -301,12 +300,13 @@ EOM;
 			->getQuery()->getResult();
 		
 		/*
-		echo $this->getEntityManager()->getRepository('TugelBundle:CodeTag')->createQueryBuilder('tag')
-			->select('tag.name', 'SUM(tag.count)', 'IDENTITY(pkg.platform)') //
-			->join('TugelBundle:Package', 'pkg', 'WITH', 'pkg.id = tag.package') //
-			//->addGroupBy('pkg.platform') //
-			//->addGroupBy('tag.name') //
-			->addOrderBy('tag.count', 'DESC') //
+		echo $this->getEntityManager()->getRepository('TugelBundle:Tag')->createQueryBuilder('tag')
+			->select('tag.name', 'SUM(pt.count) AS _count', 'IDENTITY(pkg.platform)') //
+			->join('TugelBundle:PackageTag', 'pt', 'WITH', 'tag.id = pt.tag') //
+			->join('TugelBundle:Package', 'pkg', 'WITH', 'pkg.id = pt.package') //
+			->addGroupBy('pkg.platform') //
+			->addGroupBy('tag.id') //
+			->addOrderBy('_count', 'DESC') //
 			->addOrderBy('tag.name', 'ASC') //
 			->setMaxResults(20) //
 			->getQuery()->getSql();
@@ -319,7 +319,7 @@ EOM;
 			->addOrderBy('tag.name', 'ASC') //
 			->setMaxResults(20) //
 			->getQuery()->getResult();
-		*/
+		/* */
 
 		foreach ($this->getEntityManager()->getRepository('TugelBundle:Platform')->findAll() as $platform) {
 			$platformData = array();
@@ -365,7 +365,7 @@ EOM;
 		}
 		
 		$index = array();
-		foreach ($this->getLanguageManager()->getLanguages() as $lang) {
+		foreach ($this->getLanguageManager()->all() as $lang) {
 			if ($lang->checkFilename($filename)) {
 				$fileIndex = array($lang->getName() => $lang->analyzeUse($src));
 				PackageManager::mergeIndex($index, $fileIndex);
@@ -400,7 +400,7 @@ EOM;
 		return $data;
 	}
 
-	public function find($query, $size = 20, $start = 0) {
+	public function find($query, $size = 20, $start = 0, $suggest = false) {
 		if ($this->stopwatch)
 			$this->stopwatch->start('package_search');
 		
@@ -408,12 +408,14 @@ EOM;
 			$query = $this->parseQuery($query);
 		
 		if (is_array($query)) {
-			$q = new ESQ\Bool();
+			$isEmpty = true;
+			$q = new Bool();
+			$filters = array();
 			
 			if (!empty($query['platform'])) {
 				$platform = $query['platform'];
 				if (is_string($platform)) {
-					$platform = $this->getPlatformManager()->getPlatform($platformName = $platform);
+					$platform = $this->getPlatformManager()->get($platformName = $platform);
 					if ($platform)
 						$platform = $platform->getPlatformReference()->getId();
 					else
@@ -421,60 +423,139 @@ EOM;
 				}
 				if (!is_numeric($platform))
 					$platform = 0;
-				$term = new ESQ\Term();
+				$term = new TermFilter();
 				$term->setTerm('platform.id', is_object($platform) ? $platform->getId() : $platform);
-				$q->addMust($term);
-			}
-			
-			if (!empty($query['depends'])) {
-				$match = new ESQ\Match();
-				$match->setFieldQuery('dependencies.name', $query['depends']);
-				$q->addMust($match);
-			}
-			
-			if (!empty($query['namespace'])) {
-				$match = new ESQ\Match();
-				$match->setFieldQuery('namespaces', $query['namespace']);
-				$q->addShould($match);
-			}
-			
-			if (!empty($query['class'])) {
-				$match = new ESQ\Match();
-				$match->setFieldQuery('classes', $query['class']);
-				$q->addShould($match);
+				$filters[] = $term;
+				$isEmpty = false;
 			}
 			
 			if (!empty($query['language'])) {
-				$match = new ESQ\Term();
+				$match = new Match();
 				$match->setFieldQuery('languages', $query['language']);
+				$match->setFieldOperator('languages', 'and');
 				$q->addMust($match);
+				$isEmpty = false;
+			}
+			
+			if (!empty($query['depends'])) {
+				$match = new Match();
+				$match->setFieldQuery('dependencies.name', $query['depends']);
+				$match->setFieldOperator('dependencies.name', 'and');
+				$q->addMust($match);
+				$isEmpty = false;
+			}
+			
+			if (!empty($query['namespace'])) {
+				$match = new Match();
+				$match->setFieldQuery('namespaces', $query['namespace']);
+				$q->addShould($match);
+				$isEmpty = false;
+			}
+			
+			if (!empty($query['class'])) {
+				$match = new Match();
+				$match->setFieldQuery('classes', $query['class']);
+				$q->addShould($match);
+				$isEmpty = false;
 			}
 			
 			if (!empty($query['license'])) {
-				$match = new ESQ\Match();
+				$match = new Match();
 				$match->setFieldQuery('license', $query['license']);
 				$q->addMust($match);
+				$isEmpty = false;
 			}
 			
 			if (!empty($query['query'])) {
-				$match = new ESQ\MultiMatch();
-				$match->setQuery($query['query']);
-				$match->setFields(array('tagsText', 'description^2', 'name^3'));
-				$match->setType('most_fields');
-				$q->addShould($match);
+				//$suggest = true;
+				if ($suggest) {
+					$match = new Match();
+					$match->setFieldType('name', 'phrase_prefix');
+					$match->setFieldParam('name', 'slop', 4);
+					$match->setFieldParam('name', 'max_expansions', 100);
+					$match->setFieldQuery('name', $query['query']);
+					$match->setFieldBoost('name', 2);
+					$q->addShould($match);
+					
+					$match = new Match();
+					$match->setFieldType('description', 'phrase_prefix');
+					$match->setFieldParam('description', 'slop', 20);
+					$match->setFieldParam('description', 'max_expansions', 10);
+					$match->setFieldQuery('description', $query['query']);
+					$match->setFieldBoost('description', 0.0001);
+					$q->addShould($match);
+					
+					/*
+					$match = new Match();
+					//$match->setFieldType('classes', 'phrase_prefix');
+					//$match->setFieldParam('classes', 'slop', 10000);
+					//$match->setFieldParam('classes', 'max_expansions', 20);
+					$match->setFieldQuery('classes', $query['query']);
+					$q->addShould($match);
+					
+					$match = new Match();
+					$match->setFieldParam('classesAnalyzed', 'slop', 10000);
+					$match->setFieldQuery('classesAnalyzed', $query['query']);
+					$q->addShould($match);
+					
+					$match = new Match();
+					$match->setFieldQuery('namespaces', $query['query']);
+					$match->setFieldBoost('namespaces', 0.5);
+					$q->addShould($match);
+					
+					$match = new Match();
+					$match->setFieldQuery('namespacesAnalyzed', $query['query']);
+					$match->setFieldBoost('namespacesAnalyzed', 0.5);
+					$q->addShould($match);
+					*/
+				} else {
+					$match = new MultiMatch();
+					$match->setType('most_fields');
+					//$match->setType('best_fields'); $match->setTieBreaker(0.3);
+					$match->setQuery($query['query']);
+					$match->setFields(array(
+						'name^1.5',
+						'description^1',
+						'classes^0.6',
+						'classesAnalyzed^0.6',
+						'namespaces^0.3',
+						'namespacesAnalyzed^0.3',
+					));
+					$q->addShould($match);
+				}
+				$isEmpty = false;
 			}
-			$query = $q;
+			
+			if (count($filters) > 0) {
+				$query = new Filtered();
+				$query->setQuery($q);
+				if (count($filters) > 1) {
+					$qf = new BoolAnd();
+					$qf->setFilters($filters);
+					$query->setFilter($qf);
+				} else {
+					$query->setFilter($filters[0]);
+				}
+			} else {
+				$query = $q;
+			}
 		}
 
 		$query = \Elastica\Query::create($query);
 		$query->setSize($size);
 		$query->setFrom($start);
+		$query->setExplain(true);
 		$this->lastQuery = $query->toArray();
 		
-		if (empty($this->lastQuery['query']['bool']))
+		//echo "<pre>" . json_encode($this->lastQuery, JSON_PRETTY_PRINT); exit;
+		
+		if ($isEmpty) {
 			$result = array();
-		else
-			$result = $this->getNormalizedScores($this->finderHelper->findWithScore($query), 3);
+			$this->lastResponse = null;
+		} else {
+			$result = $this->finderHelper->findWithScores($query, 1);
+			$this->lastResponse = $this->finderHelper->lastResult->getResponse()->getData();
+		}
 		
 		if ($this->stopwatch)
 			$this->lastQueryTime = $this->stopwatch->stop('package_search')->getDuration();
@@ -655,39 +736,4 @@ EOM;
 		return $result;
 	}
 
-}
-
-class TransformedFinderHelper extends TransformedFinder {
-		
-	protected $finder;
-	
-	public function __construct($finder)
-	{
-		$this->finder = $finder;
-	}
-	
-	public function getSearchable($instance) {
-		return $instance->searchable;
-	}
-	
-	public function getTransformer($instance) {
-		return $instance->transformer;
-	}
-	
-	public function findWithScore($query, $limit = null) {
-		$queryObject = \Elastica\Query::create($query);
-		if (null !== $limit) {
-			$queryObject->setSize($limit);
-		}
-		$this->lastQuery = $queryObject->toArray();
-		
-		$queryResults = $this->getSearchable($this->finder)->search($queryObject)->getResults();
-		$results = $this->getTransformer($this->finder)->transform($queryResults);
-		foreach ($results as $key => $entity) {
-			$hit = $queryResults[$key]->getHit();
-			$entity->_score = $hit['_score'];
-		}
-		return $results;
-	}
-	
 }

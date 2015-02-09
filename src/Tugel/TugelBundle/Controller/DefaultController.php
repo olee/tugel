@@ -39,7 +39,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/search", name="search")
 	 * @Template
-	 * @Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 days", public=true)
 	 */
 	public function searchAction(Request $request) {
 		if (!$request->query->has('q'))
@@ -56,68 +56,62 @@ class DefaultController extends ControllerHelperNT {
 			'results' => $results,
 			'query' => $query,
 			'el_query' => json_encode($pm->lastQuery, JSON_PRETTY_PRINT),
+			'el_response' => json_encode($pm->lastResponse, JSON_PRETTY_PRINT),
 			'time' => $pm->lastQueryTime
 		);
 		return $this->render('TugelBundle:Default:search.html.twig', $params);
 	}
-	
+		
 	/**
-	 * @Route("/search/{platform}", name="search_platform")
-	 * @Template
+	 * @Route("/suggest", name="suggest")
+	 * -@Cache(expires="+1 days", public=true)
 	 */
-	public function searchPlatformAction(Request $request, $platform) {
+	public function suggestAction(Request $request) {
 		if (!$request->query->has('q')) {
-			$params = array('query' => array('platform' => $platform));
+			return false;
 		} else {
+			$q = $request->query->get('q');
+			if ($request->query->has('platform'))
+				$q .= ' platform:' . $request->query->get('platform');
 			$pm = $this->getPackageManager();
-			$query = $pm->parseQuery($q);
-			$query['platform'] = $platform;
-			$results = $pm->find($query, 20, $request->query->get('page', 0) * 20);
-			$params = array(
-				'results' => $results,
-				'query' => $query,
-				'el_query' => json_encode($pm->lastQuery, JSON_PRETTY_PRINT),
-				'time' => $pm->lastQueryTime
-			);
-			
+			$json = $this->container->get('serializer')->serialize($pm->find($pm->parseQuery($q), 10, 0, true), 'json', SerializationContext::create()->setGroups(array('name'))->setSerializeNull(true));
+			return new Response($json, 200, array('Content-Type' => 'application/json'));
 		}
-		return $this->render('TugelBundle:Default:search.html.twig', $params);
 	}
 	
 	/**
-	 * @Route("/info/{id}", name="info", requirements={"id"="\d+"})
-	 * @Template
+	 * @Route("/suggest_prefetch", name="suggest_prefetch")
+	 * -@Cache(expires="+1 days", public=true)
 	 */
-	public function infoAction($id = null) {
-		if ($id == null)
-			return $this->redirect($this->generateUrl('home'));
+	public function suggestPrefetchAction(Request $request) {
+		$pm = $this->getPackageManager();
 		
-		$package = $this->getPackageManager()->getPackage($id);
-		if (!$package)
-			return $this->redirect($this->generateUrl('home'));
+		$platforms = array_map(function($v) { return 'platform:' . $v->getName(); }, array_values($pm->getPlatformManager()->all()));
+		$languages = array_map(function($v) { return 'language:' . $v->getName(); }, array_values($pm->getLanguageManager()->all()));
 		
-		return array('package' => $package);
+		$items = array_merge($platforms, $languages, array('platform:', 'language:'));
+		foreach ($languages as $a)
+			$items[] = $a . ' platform:';
+		foreach ($platforms as $a)
+			$items[] = $a . ' language:';
+		foreach ($platforms as $a)
+			foreach ($languages as $b)
+				$items[] = $a . ' ' . $b;
+		foreach ($languages as $a)
+			foreach ($platforms as $b)
+				$items[] = $a . ' ' . $b;
+			
+		$transformer = function($v) {
+			return array('name' => is_array($v) ? join(' ', $v) : $v);
+		};
+		$data = array_map($transformer, $items);
+		
+		return new Response(json_encode($data), 200, array('Content-Type' => 'application/json'));
 	}
 		
-	/**
-	 * @Route("/info/{platform}/{package}", name="info_named", requirements={"package"=".*"})
-	 * @Template
-	 */
-	public function infoNamedAction($platform, $package) {
-		//echo "$platform\n$package\n"; exit;
-		if ($platform == null || $package == null)
-			return $this->redirect($this->generateUrl('home'));
-		
-		$platform = $this->getPackageManager()->getPlatformManager()->getPlatform($platform);
-		$pkg = $platform->getPackage($package);
-		if (!$pkg)
-			return $this->redirect($this->generateUrl('home'));
-		
-		return $this->render('TugelBundle:Default:info.html.twig', array('package' => $pkg));
-	}
-	
 	/**
 	 * @Route("/search.json", name="search_json")
+	 * -@Cache(expires="+1 days", public=true)
 	 */
 	public function searchJsonAction(Request $request) {
 		$groups = array('Default');
@@ -138,20 +132,68 @@ class DefaultController extends ControllerHelperNT {
 			$results = $pm->find($query, $request->query->get('c', 10), $request->query->get('p', 0) * $request->query->get('c', 10));
 
 			$result = array(
-				'success' => true,
-				'query' => $query,
-				'results' => $results,
-				'el_query' => $pm->lastQuery,
+				//'success' => true,
+				//'query' => $query,
+				//'results' => $results,
+				//'el_query' => $pm->lastQuery,
+				'el_response' => $pm->lastResponse,
 			);
 		}
 		
 		$json = $this->container->get('serializer')->serialize($result, 'json', SerializationContext::create()->setGroups($groups)->setSerializeNull(true));
 		return new Response($json, 200, array('Content-Type' => 'application/json'));
 	}
+	
+	/**
+	 * @Route("/info/{id}", name="info", requirements={"id"="\d+"})
+	 * @Template
+	 * @Cache(expires="+1 days", public=true)
+	 */
+	public function infoAction($id = null) {
+		if ($id == null)
+			return $this->redirect($this->generateUrl('home'));
+		
+		$package = $this->getPackageManager()->getPackage($id);
+		if (!$package)
+			return $this->redirect($this->generateUrl('home'));
+		$params = array('package' => $package);
+		
+		
+		if ($this->getContainer()->getParameter('kernel.environment') == 'dev') {
+			$pm = $this->getPackageManager();
+			$query = $pm->parseQuery($q);
+			if ($request->query->has('g'))
+				$groups[] = strtolower($request->query->get('g'));
+			$results = $pm->find($query, $request->query->get('c', 10), $request->query->get('p', 0) * $request->query->get('c', 10));
+			
+			$params['el_response'] = json_encode($pm->lastResponse, JSON_PRETTY_PRINT);
+		}
+		
+		return $params;
+	}
+		
+	/**
+	 * @Route("/info/{platform}/{package}", name="info_named", requirements={"package"=".*"})
+	 * @Template
+	 * @Cache(expires="+1 days", public=true)
+	 */
+	public function infoNamedAction($platform, $package) {
+		//echo "$platform\n$package\n"; exit;
+		if ($platform == null || $package == null)
+			return $this->redirect($this->generateUrl('home'));
+		
+		$platform = $this->getPackageManager()->getPlatformManager()->get($platform);
+		$pkg = $platform->getPackage($package);
+		if (!$pkg)
+			return $this->redirect($this->generateUrl('home'));
+		
+		return $this->render('TugelBundle:Default:info.html.twig', array('package' => $pkg));
+	}
 
 	/**
 	 * @Route("/stats", name="stats")
 	 * @Template
+	 * @Cache(expires="+1 days", public=true)
 	 */
 	public function statsAction() {
 		return $this->getPackageManager()->getStats();
@@ -160,6 +202,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/about", name="about")
 	 * @Template
+	 * @Cache(expires="+1 days", public=true)
 	 */
 	public function aboutAction() {
 		return array();

@@ -201,13 +201,24 @@ abstract class AbstractPlatform {
 		$package->setNew(false);
 		$package->setIndexedDate(new \DateTime());
 		
-		if ($dry)
+		if ($dry) {
 			$this->getEntityManager()->refresh($package);
-		else
+		} else {
 			$this->getEntityManager()->flush();
+		}
 		$this->log('indexed', $package, Logger::DEBUG);
 		
 		return true;
+	}
+
+	public function showDoctrineDebugInfo() {
+		$uow = $this->getEntityManager()->getUnitOfWork();
+		$uow->computeChangeSets();
+		print_r($uow->getEntityChangeSet($package));
+		print_r(array_merge(
+			array_map(function($v) { return 'DEL ' . basename(get_class($v)) . ' ' . $v->getName(); }, array_values($uow->getScheduledEntityDeletions())),
+			array_map(function($v) { return 'UP  ' . basename(get_class($v)) . ' ' . $v->getName(); }, array_values($uow->getScheduledEntityUpdates())),
+			array_map(function($v) { return 'INS ' . basename(get_class($v)) . ' ' . $v->getName(); }, array_values($uow->getScheduledEntityInsertions()))));
 	}
 
 	public function getCacheVersion(Package $package, $cachePath) {
@@ -297,7 +308,7 @@ abstract class AbstractPlatform {
 		$i = 0;
 		$files = $this->recursiveScandir($path);
 		foreach ($files as $file) {
-			foreach ($this->getLanguageManager()->getLanguages() as $lang) {
+			foreach ($this->getLanguageManager()->all() as $lang) {
 				if ($lang->checkFilename($file)) {
 					$fn = substr($file, strlen($path), strlen($file) - strlen($path));
 					$this->log('Indexing ' . $fn, $package, Logger::DEBUG);
@@ -326,13 +337,14 @@ abstract class AbstractPlatform {
 				Utils::array_add($tags, strtolower($tag));
 			}
 
-			foreach ($package->getTags() as $tag) {
-				if (array_key_exists($tag->getName(), $tags)) {
-					$tag->setCount($tags[$tag->getName()]);
-					unset($tags[$tag->getName()]);
+			foreach ($package->getTags() as $pt) {
+				$tag = $pt->getName();
+				if (array_key_exists($tag, $tags)) {
+					$pt->setCount($tags[$tag]);
+					unset($tags[$tag]);
 				} else {
-					$package->removeTag($tag);
-					$this->getEntityManager()->remove($tag);
+					$package->removeTag($pt);
+					$this->getEntityManager()->remove($pt);
 				}
 			}
 		
@@ -340,6 +352,7 @@ abstract class AbstractPlatform {
 				$tagEnt = $this->tagRepo->findOneByName($tag);
 				if (!$tagEnt) {
 					$tagEnt = new Tag($tag);
+					$this->getEntityManager()->persist($tagEnt);
 					if (!$dry) $this->getEntityManager()->flush();
 				}
 				$package->addTag(new PackageTag($package, $tagEnt, $count));

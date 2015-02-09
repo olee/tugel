@@ -4,10 +4,12 @@ fos_elastica:
       host: localhost
       port: 9200
   indexes:
-      search:
+      default:
         index_name: tugel
         settings:
           index:
+              number_of_replicas: 0
+              number_of_shards: 1
               analysis:
                 filter:
                   english_stop:
@@ -34,20 +36,22 @@ fos_elastica:
                       - "_=>."
                 analyzer:
                   whitespace:
-                    type: whitespace
-                    lowercase: true
-                  identifier:
-                    type: pattern
-                    pattern: "[\\:\\.\\W\\\\]+"
-                    lowercase: false
+                    type: custom
+                    tokenizer: whitespace
+                    filter:
+                      - lowercase
                   version:
                     type: custom
                     tokenizer: version
-                    char_filter: [ version ]
+                    char_filter:
+                      - version
+                    filter:
+                      - lowercase
                   camelcase:
                     type: custom
                     tokenizer: camelcase
-                    filter: [ lowercase ]
+                    filter:
+                      - lowercase
                     alias:
                       - default_index
                       - default_search
@@ -69,60 +73,87 @@ fos_elastica:
             mappings:
               id:
                 type: integer
-                store: yes
+                store: true
               platform.id:
                 type: integer
-                store: yes
+                store: true
               version:
                 type: string
-                store: yes
+                store: true
                 analyzer: version
+                norms:
+                  enabled: false
               name:
                 type: string
-                store: yes
+                store: true
                 analyzer: camelcase
+                norms:
+                  enabled: false
               description:
                 type: string
-                store: yes
+                store: true
                 analyzer: camelcase_english
-              tagsText:
-                type: multi_field
-                fields:
-                  tagsText:
-                    type: string
-                    store: no
-                    analyzer: camelcase
-                  tagsTextAnalyzed:
-                    type: string
-                    store: no
-                    analyzer: camelcase_english
+                norms:
+                  enabled: true
+              license:
+                type: string
+                store: true
+                analyzer: standard
+                norms:
+                  enabled: false
+              languages:
+                type: string
+                store: true
+                analyzer: simple
+                norms:
+                  enabled: false
               dependencies:
                 type: object
-                store: yes
+                store: true
                 properties:
                   id:
                     type: integer
-                    store: yes
+                    store: true
                   name: 
                     type: string
-                    store: yes
+                    store: true
                     analyzer: camelcase
-              license:
-                type: string
-                store: yes
-                analyzer: camelcase
-              languages:
-                type: string
-                store: no
-                analyzer: whitespace
+                    norms:
+                      enabled: false
               namespaces:
-                type: string
-                store: no
-                analyzer: identifier
+                type: multi_field
+                norms:
+                  enabled: false
+                fields:
+                  namespaces:
+                    type: string
+                    store: false
+                    analyzer: camelcase
+                    norms:
+                      enabled: true
+                  namespacesAnalyzed:
+                    type: string
+                    store: false
+                    analyzer: camelcase_english
+                    norms:
+                      enabled: true
               classes:
-                type: string
-                store: no
-                analyzer: identifier
+                type: multi_field
+                norms:
+                  enabled: false
+                fields:
+                  classes:
+                    type: string
+                    store: false
+                    analyzer: camelcase
+                    norms:
+                      enabled: true
+                  classesAnalyzed:
+                    type: string
+                    store: false
+                    analyzer: camelcase_english
+                    norms:
+                      enabled: true
             persistence:
               driver: orm
               model: Tugel\TugelBundle\Entity\Package

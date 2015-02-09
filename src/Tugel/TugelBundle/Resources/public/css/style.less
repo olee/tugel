@@ -132,10 +132,10 @@ h2 {
 	
 	align: center;
 	text-align: center;
-	margin: 180px 0;
+	margin: 180px 5px;
 	
 	> div {
-		max-width: 290px;
+		max-width: 440px;
 		margin: auto;
 	}
 	
@@ -145,6 +145,28 @@ h2 {
 		li {
 			display: inline;
 			margin-right: 4px;
+		}
+	}
+	
+	form {
+		text-align: left;
+	}
+	
+}
+
+/*****************************************/
+
+.navbar-nav {
+	
+	@media (max-width: 768px) {
+		input {
+			width: 185px !important;
+		}
+	}
+	
+	@media (min-width: 768px) {
+		input {
+			width: 300px !important;
 		}
 	}
 	

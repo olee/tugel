@@ -41,6 +41,7 @@ class Package {
 	 * @var string
 	 *
 	 * @ORM\Column(name="name", type="string", length=255, nullable=false)
+	 * @JMS\Groups({"Default", "name"})
 	 */
 	private $name;
 

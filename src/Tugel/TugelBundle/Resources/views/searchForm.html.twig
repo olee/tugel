@@ -1,6 +1,6 @@
-<form {% if navbar is defined and navbar %}class="navbar-nav navbar-form" style="max-width:490px;" {% endif %} id="search" action="{{ path('search') }}" method="get" name="search" onsubmit="return q.value!=''">
+<form {% if navbar is defined and navbar %}class="navbar-nav navbar-form"{% endif %} id="search_form" action="{{ path('search') }}" method="get" name="search_form" onsubmit="return q.value!=''">
 	<div class="input-group">
-		<input type="text" style="min-width:215px;" class="form-control form-control" required="required" name="q" id="search_query" value="{{ app.request.query.get('q') }}">
+		<input type="text" class="form-control form-control typeahead" required="required" id="search" name="q" id="search_query" value="{{ app.request.query.get('q') }}">
 		<div class="input-group-btn">
 			<button class="btn-primary btn" type="submit" id="search_submit">Search</button>
 			<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
@@ -16,3 +16,36 @@
 		</div>
 	</div>
 </form>
+<script>
+	$(document).ready(function() {
+		var queryHandler = new Bloodhound({
+			datumTokenizer : Bloodhound.tokenizers.obj.whitespace('name'),
+			queryTokenizer : Bloodhound.tokenizers.whitespace,
+			prefetch: "{{ path('suggest_prefetch') }}",
+			remote : "{{ path('suggest') }}?q=%QUERY",
+		});
+		queryHandler.clearPrefetchCache();
+		queryHandler.clearRemoteCache();
+		//queryHandler.add({ name: 'platform:pypi'});
+		//queryHandler.add({ name: 'platform:hackage'});
+		//queryHandler.add({ name: 'platform:packagist'});
+		queryHandler.initialize();
+		$('#search').typeahead({
+			minLength : 1,
+			highlight : true,
+		}, {
+			name : 'search',
+			displayKey : 'name', 
+			source : queryHandler.ttAdapter(),
+		}); 
+	});
+</script>
+{#
+<style>
+#search_form .tt-dropdown-menu {
+	max-height: 250px;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+</style>
+#}

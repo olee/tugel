@@ -6,23 +6,13 @@
 
 {% block content %}
 <div class="cover-wrapper" style="position:absolute; top:0; min-height: 300px;">
-  <div class="cover-wrapper-inner">
-  	
-<div class="main-search">
-	<div>
-		<h2>Tugel</h2>
-		{% include "TugelBundle::searchForm.html.twig" with {navbar:false} %}
-		{#
-		<ol>
-			<li><a href="{{ path('search_platform', {platform:'packagist'}) }}">Packagist</a></li>
-			<li><a href="{{ path('search_platform', {platform:'hackage'}) }}">Hackage</a></li>
-			<li><a href="{{ path('search_platform', {platform:'pypi'}) }}">PyPi</a></li>
-			<li><a href="{{ path('search_platform', {platform:'maven'}) }}">Maven</a></li>
-		</ol>
-		#}
+	<div class="cover-wrapper-inner">
+		<div class="main-search">
+			<div>
+				<h2>Tugel</h2>
+				{% include "TugelBundle::searchForm.html.twig" with {navbar:false} %}
+			</div>
+		</div>
 	</div>
-</div>
-
-  </div>
 </div>
 {% endblock %}

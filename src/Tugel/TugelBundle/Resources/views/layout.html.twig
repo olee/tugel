@@ -14,6 +14,7 @@
 {% block stylesheets %}
 {% stylesheets
 		'bundles/tugel/bootstrap/css/bootstrap.min.css'
+		'bundles/tugel/css/bootstrap-typeahead.css'
 		'bundles/tugel/css/bootstrap-style.less'
 		'bundles/tugel/css/style.less'
 		output='css/styles.css'
@@ -28,10 +29,7 @@
 {% block header_js %}
 {% javascripts 
 		'bundles/tugel/js/lib/jquery-1.11.0.js'
-		'bundles/tugel/js/lib/purl.min.js'
-		'bundles/tugel/js/setupFormCollection.js'
 		'bundles/tugel/bootstrap/js/bootstrap.js'
-		'bundles/tugel/js/accordion.js'
 		output='js/lib.js'
 		filter='?yui_js' %}
 	<script src="{{ asset_url }}"></script>
@@ -43,6 +41,8 @@
 {% block javascripts %}
 	{% javascripts 
 		'bundles/tugel/js/lib/jquery.placeholder.js'
+		'bundles/tugel/js/lib/typeahead.bundle.js'
+		'bundles/tugel/js/accordion.js'
 		output='js/postload_lib.js'
 		filter='?yui_js' %}
 		<script src="{{ asset_url }}"></script>

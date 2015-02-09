@@ -13,7 +13,7 @@
 		<a href="https://pypi.python.org/pypi?%3Aaction=search&term={{ query.query|url_encode }}">PyPi</a> |
 	</div>
 {% if query.platform is defined or query.language is defined %}
-	<h3>{% if query.platform is defined %}Platform: {{ query.platform }}{% endif %} {% if query.language is defined %}Language: {{ query.language }}{% endif %}</h3>
+	<h3>{% if query.platform is defined %}Platform:{{ query.platform|capitalize }}{% endif %} {% if query.language is defined %}Language:{{ query.language|capitalize }}{% endif %}</h3>
 {% endif %}
 	<hr>
 	<ul>
@@ -22,7 +22,7 @@
 			<h4>
 				<span class="pkg_score {{ package._percentScore > 0.66 ? 'score_green' : (package._percentScore > 0.5 ? 'score_orange' : 'score_red') }}">{{ package._score|number_format(3) }}</span>
 				{#<a href="{{ path('info', {id:package.id}) }}">{{ package.name }}</a>#}
-				<a href="{{ path('info_named', {platform:package.platform.name, package:package.name}) }}">{{ package.name }}</a>
+				<a href="{{ path('info_named', {platform:package.platform.name, package:package.name, q:query.raw}) }}">{{ package.name }}</a>
 				<a href="{{ package.url }}"><span class="glyphicon glyphicon-link"> </span></a>
 			</h4>
 			<div>
@@ -35,7 +35,10 @@
 		{% endfor %}
 		<hr>
 		<p>Query time: {{ time }}</p>
-		{% if app.environment == 'dev' %}<pre>{{ el_query }}</pre>{% endif %}
+		{% if app.environment == 'dev' %}
+		<pre>{{ el_query }}</pre>
+		<pre>{{ el_response }}</pre>
+		{% endif %}
 	</ul>
 {% else %}
 {% if query.platform is defined or query.language is defined %}

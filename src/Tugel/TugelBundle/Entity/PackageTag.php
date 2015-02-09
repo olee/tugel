@@ -23,7 +23,7 @@ class PackageTag {
 	 * @var string
 	 *
 	 * @ORM\Id
-	 * @ORM\ManyToOne(targetEntity="Package", inversedBy="tags", cascade={"all"}, fetch="EXTRA_LAZY")
+	 * @ORM\ManyToOne(targetEntity="Package", inversedBy="tags", cascade={"persist"}, fetch="EXTRA_LAZY")
 	 * @ORM\JoinColumn(name="package_id", nullable=false)
 	 */
 	private $package;
@@ -32,7 +32,7 @@ class PackageTag {
 	 * @var string
 	 *
 	 * @ORM\Id
-	 * @ORM\ManyToOne(targetEntity="Tag", inversedBy="packageTags", cascade={"all"}, fetch="EAGER")
+	 * @ORM\ManyToOne(targetEntity="Tag", inversedBy="packageTags", cascade={"persist"}, fetch="EAGER")
 	 * @ORM\JoinColumn(name="tag_id", nullable=false)
 	 */
 	private $tag;
@@ -50,6 +50,10 @@ class PackageTag {
 		$this->package = $package;
 		$this->tag = $tag;
 		$this->count = $count;
+	}
+
+	public function __toString() {
+		return $this->getName() . ':' . $this->getCount();
 	}
 
 	/**

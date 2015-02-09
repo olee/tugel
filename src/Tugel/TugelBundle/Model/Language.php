@@ -16,7 +16,14 @@ abstract class Language {
 	}
 
 	public function checkFilename($filename) {
-		return !$filename || substr(strtolower($filename), -strlen($this->getExtension())) === $this->getExtension();
+		$extensions = $this->getExtensions();
+		if (!is_array($extensions))
+			$extensions = array($extensions);
+		foreach ($extensions as $ext) {
+			if (substr(strtolower($filename), -strlen($ext)) === $ext)
+				return true;
+		}
+		return false;
 	}
 
 	/*******************************************************************/
@@ -27,6 +34,6 @@ abstract class Language {
 
 	public abstract function getName();
 
-	public abstract function getExtension();
+	public abstract function getExtensions();
 
 }

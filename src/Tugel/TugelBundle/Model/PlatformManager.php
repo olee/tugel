@@ -6,29 +6,24 @@ use Tugel\TugelBundle\Model\AbstractPlatform;
 
 class PlatformManager {
 
-	/**
-	 * @var Logger
-	 */
-	public $logger;
+	private $elements = array();
 
-	private $platforms = array();
-
-	public function addPlatform(AbstractPlatform $platform) {
-		$this->platforms[$platform->getName()] = $platform;
+	public function add(AbstractPlatform $platform) {
+		$this->elements[$platform->getName()] = $platform;
 	}
 
 	/**
 	 * @return array
 	 */
-	public function getPlatforms() {
-		return $this->platforms;
+	public function all() {
+		return $this->elements;
 	}
 	
 	/**
 	 * @return AbstractPlatform
 	 */
-	public function getPlatform($name) {
-		return isset($this->platforms[$name]) ? $this->platforms[$name] : null;
+	public function get($name) {
+		return isset($this->elements[$name]) ? $this->elements[$name] : null;
 	}
 
 }

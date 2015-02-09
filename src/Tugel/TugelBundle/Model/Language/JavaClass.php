@@ -45,7 +45,7 @@ class JavaClass extends Language {
 		return 'Java';
 	}
 	
-	public function getExtension() {
+	public function getExtensions() {
 		return '.class';
 	}
 

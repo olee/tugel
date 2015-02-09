@@ -6,27 +6,24 @@ use Tugel\TugelBundle\Model\Language;
 
 class LanguageManager {
 
-	private $languages = array();
+	private $elements = array();
 
-	public function __construct() {
-	}
-
-	public function addLanguage(Language $language) {
-		$this->languages[$language->getName()] = $language;
+	public function add(Language $language) {
+		$this->elements[$language->getName()] = $language;
 	}
 
 	/**
 	 * @return array
 	 */
-	public function getLanguages() {
-		return $this->languages;
+	public function all() {
+		return $this->elements;
 	}
 	
 	/**
-	 * @return Language
+	 * @return AbstractPlatform
 	 */
-	public function getLanguage($name) {
-		return $this->languages[$name];
+	public function get($name) {
+		return isset($this->elements[$name]) ? $this->elements[$name] : null;
 	}
 
 }

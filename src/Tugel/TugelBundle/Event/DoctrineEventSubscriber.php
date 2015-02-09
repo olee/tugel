@@ -44,7 +44,7 @@ class DoctrineEventSubscriber extends ContainerAware implements EventSubscriber 
 		 */
 		$entity = $args->getEntity();
 		if ($entity instanceof Platform) {
-			$entity->platform = $this->container->get('tugel.platform_manager')->getPlatform($entity->getName());
+			$entity->platform = $this->container->get('tugel.platform_manager')->get($entity->getName());
 		};
 	}
 
