@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
 	<h2><a href="{{ package.url }}">{{ package.name }}</a></h2>
-	<h3>Platform: {{ package.platform.name }}</h3>
+	<h3>Platform: {{ platform.name }}</h3>
 	<h4>Languages: {{ package.languages }}</h4>
 	<h4>Version: {{ package.version }}</h4>
 {% if package.license is not empty %}
@@ -58,16 +58,28 @@
 		</div>
 		<div class="panel panel-default">
 			<a class="panel-heading" role="tab" id="tagsHeading">
-    			<span class="badge">{{ package.tags|length }}</span>
+    			<span class="badge">{{ tags|length }}</span>
 				<h4 class="panel-title">Tags</h4>
 			</a>
 			<div id="tags" class="panel-collapse collapse" role="tabpanel">
 				<div class="panel-body">
-					<ul>
-						{% for tag in package.tags %}
-							<li>{{ tag.count }} - {{ tag.name }}
-						{% endfor %}
-					</ul>
+					<div class="row taglist">
+						{% set cnt = (tags|length / 3)|round(0, 'ceil') %}
+						{%- for i in 0..2 %}
+						<div class="col-sm-4">
+							<table>
+								<tbody>
+									{%- for tag,count in tags %}{% if loop.index0 >= cnt * i and loop.index0 < cnt * (i + 1) %}
+									<tr>
+										<td><span class="badge">{{ count }}</span></td>
+										<td><a href="{{ path('search', {q:tag}) }}">{{ tag }}</a></td>
+									</tr>
+									{%- endif %}{% endfor %}
+								</tbody>
+							</table>
+						</div>
+						{%- endfor %}
+					</div>
 				</div>
 			</div>
 		</div>

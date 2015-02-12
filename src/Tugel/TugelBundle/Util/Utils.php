@@ -6,6 +6,14 @@ class Utils {
 
 	const CAMEL_CASE_PATTERN = '/[a-z]+|[0-9]+|(?:[A-Z][a-z]+)|(?:[A-Z]+(?=(?:[A-Z][a-z])|[^AZa-z]|[$\\d\\n]))/';
 
+	public static function splitTags($text) {
+		preg_match_all(Utils::CAMEL_CASE_PATTERN, $text, $matches);
+		$tags = array();
+		foreach ($matches[0] as $tag)
+			Utils::array_add($tags, strtolower($tag));
+		return $tags;
+	}
+	
 	public static function array_add(&$array, $key, $value = 1)
 	{
 		if (is_null($array))

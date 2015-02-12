@@ -29,6 +29,7 @@ use Tugel\TugelBundle\Entity\Platform;
 
 use Tugel\TugelBundle\Model\PackageManager;
 use Tugel\TugelBundle\Model\AbstractPlatform;
+use Tugel\TugelBundle\Util\Utils;
 
 use Elastica\Client;
 use Elastica\Index;
@@ -180,7 +181,16 @@ class DefaultController extends ControllerHelperNT {
 	public function renderInfo(Request $request, Package $package) {
 		if (!$package)
 			return $this->redirect($this->generateUrl('home'));
-		$params = array('package' => $package);
+		
+		// Get tags
+		$tags = Utils::splitTags($package->getClasses() . ' ' . $package->getNamespaces());
+		arsort($tags);
+		
+		$params = array(
+			'platform' => $package->getPlatform(),
+			'package' => $package,
+			'tags' => $tags,
+		);
 		
 		if ($this->container->getParameter('kernel.environment') == 'dev' && $request->query->has('q')) {
 			$pm = $this->getPackageManager();

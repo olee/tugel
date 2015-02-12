@@ -297,10 +297,10 @@ EOM;
 		$platforms = array();
 		
 		$classesAgg = new \Elastica\Aggregation\Terms('combinedTags');
-		$classesAgg->setField('combinedTags')->setSize(40);
+		$classesAgg->setField('combinedTags')->setSize(39);
 		
 		$licensesAgg = new \Elastica\Aggregation\Terms('licenses');
-		$licensesAgg->setField('licenseNotAnalyzed')->setSize(40);
+		$licensesAgg->setField('licenseNotAnalyzed')->setSize(39);
 
 		$platformAgg = new \Elastica\Aggregation\Terms('platform');
 		$platformAgg->setField('platform.id')->addAggregation($classesAgg)->addAggregation($licensesAgg);

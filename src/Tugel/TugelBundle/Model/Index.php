@@ -5,7 +5,7 @@ namespace Tugel\TugelBundle\Model;
 use Tugel\TugelBundle\Util\Utils;
 
 class Index {
-	
+
 	public $classes = array();
 	
 	public $namespaces = array();
@@ -14,24 +14,25 @@ class Index {
 	
 	public $tags = array();
 
-	public function __construct() {
-	}
-
 	public function addLanguage($language) {
 		//Utils::array_add($this->languages, $language);
 		$this->languages[$language] = 1;
+		return $this;
 	}
 
 	public function addNamespace($namespace) {
 		Utils::array_add($this->namespaces, $namespace);
+		return $this;
 	}
 
 	public function addClass($class) {
 		Utils::array_add($this->classes, $class);
+		return $this;
 	}
 
 	public function addTag($tag) {
 		Utils::array_add($this->tags, $tag);
+		return $this;
 	}
 
 	public function tagData() {
@@ -39,6 +40,7 @@ class Index {
 			Utils::array_add($this->tags, $tag, $count);
 		foreach ($this->namespaces as $tag => $count)
 			Utils::array_add($this->tags, $tag); //, $count);
+		return $this;
 	}
 
 	/**
