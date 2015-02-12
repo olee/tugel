@@ -84,11 +84,20 @@ fos_elastica:
                 norms:
                   enabled: false
               name:
-                type: string
-                store: true
-                analyzer: camelcase
-                norms:
-                  enabled: false
+                type: multi_field
+                fields:
+                  name:
+                    type: string
+                    store: true
+                    analyzer: camelcase
+                    norms:
+                      enabled: false
+                  nameNotAnalyzed:
+                    type: string
+                    store: false
+                    index: not_analyzed
+                    norms:
+                      enabled: false
               description:
                 type: string
                 store: true
