@@ -1,0 +1,25 @@
+{% macro tree(data) %}{% spaceless %}
+{% import _self as self %}
+<pre class="json-treeview">{ {{ self.treeItem(data) }} }</pre>
+<script src="{{ asset('bundles/tugel/js/json-treeview.js') }}" type="text/javascript" charset="utf-8"></script>
+{% endspaceless %}{% endmacro %}
+
+{% macro treeItem(data, isNumArray) %}{% import _self as self -%}
+<ul class="obj collapsible">{%- spaceless -%}
+{%- if isNumArray is not defined %}{% set isNumArray = false %}{% endif -%}
+{%- for k,v in data -%}
+	<li>
+	{%- if not isNumArray %}<span title="&lt;root&gt;.require" class="prop"><span class="q">"</span>{{ k }}<span class="q">"</span></span>: {% endif -%}
+	{%- if v is iterable -%}
+		{%- if v[0] is defined -%}
+			<span class="collapser"></span>[{{ self.treeItem(v, true) }}]
+		{%- else -%}
+			<span class="collapser"></span>{{'{'}}{{ self.treeItem(v) }}}
+		{%- endif -%}
+	{%- else -%}
+		<span class="string">"{{ v|replace({'\n':'\\n'}) }}"</span>
+	{%- endif -%}
+	,</li>
+{%- endfor -%}
+</ul>
+{% endspaceless %}{% endmacro %}

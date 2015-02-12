@@ -17,6 +17,7 @@
 		'bundles/tugel/css/bootstrap-typeahead.css'
 		'bundles/tugel/css/bootstrap-style.less'
 		'bundles/tugel/css/style.less'
+		'bundles/tugel/css/json-treeview.css'
 		output='css/styles.css'
 		filter='cssrewrite'
 		filter='?yui_css' %}
@@ -32,7 +33,7 @@
 		'bundles/tugel/bootstrap/js/bootstrap.js'
 		output='js/lib.js'
 		filter='?yui_js' %}
-	<script src="{{ asset_url }}"></script>
+	<script src="{{ asset_url }}" type="text/javascript" charset="utf-8"></script>
 {% endjavascripts %}
 {% endblock %}
 
@@ -45,7 +46,7 @@
 		'bundles/tugel/js/accordion.js'
 		output='js/postload_lib.js'
 		filter='?yui_js' %}
-		<script src="{{ asset_url }}"></script>
+		<script src="{{ asset_url }}" type="text/javascript" charset="utf-8"></script>
 	{% endjavascripts %}
 {% endblock %}
 

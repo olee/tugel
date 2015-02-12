@@ -11,8 +11,8 @@ use Doctrine\DBAL\Schema\View;
 use Monolog\Logger;
 
 use FOS\ElasticaBundle\Finder\FinderInterface;
-use Elastica\Query as ESQ;
-use Elastica\Filter as ESF;
+use Elastica\Type;
+use Elastica\Query;
 use Elastica\Query\Filtered;
 use Elastica\Query\Bool;
 use Elastica\Query\Match;
@@ -72,6 +72,11 @@ EOM;
 	private $tagRepository;
 
 	/**
+	 * @var Type
+	 */
+	private $packageIndex;
+
+	/**
 	 * @var FinderInterface
 	 */
 	private $finder;
@@ -96,11 +101,12 @@ EOM;
 	 */
 	public $stopwatch;
 
-	public function __construct(EntityManagerInterface $em, Logger $logger, PlatformManager $platformManager, LanguageManager $languageManager, FinderInterface $finder, $stopwatch) {
+	public function __construct(EntityManagerInterface $em, Logger $logger, PlatformManager $platformManager, LanguageManager $languageManager, Type $packageIndex, FinderInterface $finder, $stopwatch) {
 		$this->em = $em;
 		$this->logger = $logger;
 		$this->platformManager = $platformManager;
 		$this->languageManager = $languageManager;
+		$this->packageIndex = $packageIndex;
 		$this->finder = $finder;
 		$this->stopwatch = $stopwatch;
 		
@@ -321,37 +327,43 @@ EOM;
 			->getQuery()->getResult();
 		/* */
 
-		foreach ($this->getEntityManager()->getRepository('TugelBundle:Platform')->findAll() as $platform) {
-			$platformData = array();
-			
-			$platformData['count'] = (int) $this->packageRepository->createQueryBuilder('pkg') //
-				->select('count(pkg)') //
-				->where('pkg.platform = ' . $platform->getId()) //
-				->getQuery()->getSingleScalarResult(); //
-			$platformData['indexed_count'] = (int) $this->packageRepository->createQueryBuilder('pkg') //
-				->select('count(pkg)') //
-				->where('pkg.platform = ' . $platform->getId()) //
-				->andWhere('pkg.version IS NOT NULL') //
-				->andWhere('pkg.error IS NULL') //
-				->getQuery()->getSingleScalarResult();
-			$platformData['error_count'] = (int) $this->packageRepository->createQueryBuilder('pkg') //
-				->select('count(pkg)') //
-				->where('pkg.platform = ' . $platform->getId()) //
-				->andWhere('pkg.error IS NOT NULL') //
-				->getQuery()->getSingleScalarResult();
-			$platformData['last_added'] = $this->packageRepository->createQueryBuilder('pkg') //
-				->where('pkg.platform = ' . $platform->getId()) //
-				->orderBy('pkg.addedDate', 'DESC') //
-				->setMaxResults(4) //
-				->getQuery()->getResult();
-			$platformData['last_indexed'] = $this->packageRepository->createQueryBuilder('pkg') //
-				->where('pkg.platform = ' . $platform->getId()) //
-				->orderBy('pkg.indexedDate', 'DESC') //
-				->setMaxResults(8) //
-				->getQuery()->getResult();
 
-			$data['platforms'][$platform->getName()] = $platformData;
+		$classesAgg = new \Elastica\Aggregation\Terms('combinedTags');
+		$classesAgg->setField('combinedTags')->setSize(40);
+		$licensesAgg = new \Elastica\Aggregation\Terms('licenses');
+		$licensesAgg->setField('licenseNotAnalyzed')->setSize(40);
+		
+		$platformData = array();
+		$platformData['stats'] = $this->packageIndex->search(Query::create(null)->addAggregation($classesAgg)->addAggregation($licensesAgg))->getAggregations();
+		$platformData['name'] = 'Global statistics';
+		$platformData['count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->getQuery()->getSingleScalarResult();
+		$platformData['indexed_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->andWhere('pkg.version IS NOT NULL')->andWhere('pkg.error IS NULL')->getQuery()->getSingleScalarResult();
+		$platformData['error_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->andWhere('pkg.error IS NOT NULL')->getQuery()->getSingleScalarResult();
+		$platformData['last_added'] = $this->packageRepository->createQueryBuilder('pkg')->orderBy('pkg.addedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
+		$platformData['last_indexed'] = $this->packageRepository->createQueryBuilder('pkg')->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
+		$data['platforms'][0] = $platformData;
+		
+		foreach ($this->getEntityManager()->getRepository('TugelBundle:Platform')->findBy(array(), array('name' => 'ASC')) as $platform) {
+			$platformData = array();
+			$platformData['name'] = $platform->getName();
+			$platformData['count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->getQuery()->getSingleScalarResult(); //
+			$platformData['indexed_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.version IS NOT NULL')->andWhere('pkg.error IS NULL')->getQuery()->getSingleScalarResult();
+			$platformData['error_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.error IS NOT NULL')->getQuery()->getSingleScalarResult();
+			$platformData['last_added'] = $this->packageRepository->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.addedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
+			$platformData['last_indexed'] = $this->packageRepository->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
+			$data['platforms'][$platform->getId()] = $platformData;
 		}
+
+		$platformAgg = new \Elastica\Aggregation\Terms('platform');
+		$platformAgg->setField('platform.id')->addAggregation($classesAgg)->addAggregation($licensesAgg);
+		$stats = $this->packageIndex->search(Query::create(null)->addAggregation($platformAgg))->getAggregations();
+		
+		foreach ($stats['platform']['buckets'] as $stat) {
+			$data['platforms'][$stat['key']]['stats'] = $stat;
+		}
+		$data['stats_'] = print_r($stats, true);
+
+
 		return $data;
 	}
 
@@ -509,12 +521,27 @@ EOM;
 					$q->addShould($match);
 					*/
 				} else {
+					/*
+					$match = new Match();
+					$match->setFieldQuery('classes', $query['query']);
+					$terms = array('json');
+					
+					$script = str_replace("\t", '', str_replace("\n", ' ', str_replace("\r", '', PackageManager::SCRIPT)));
+					$functionQuery = new ESQ\FunctionScore();
+					$functionQuery->setScoreMode('sum');
+					$functionQuery->setBoostMode('replace');
+					$functionQuery->addFunction('script_score', array('script' => $script, 'params' => array('terms' => $terms)));
+					$functionQuery->setQuery($match);
+					$q->addMust($functionQuery);
+					/**/
+					
+					/**/
 					$match = new MultiMatch();
 					$match->setType('most_fields');
 					//$match->setType('best_fields'); $match->setTieBreaker(0.3);
 					$match->setQuery($query['query']);
 					$match->setFields(array(
-						'name^1.5',
+						'name^0.2',
 						'description^1',
 						'classes^0.6',
 						'classesAnalyzed^0.6',
@@ -522,6 +549,7 @@ EOM;
 						'namespacesAnalyzed^0.3',
 					));
 					$q->addShould($match);
+					/**/
 				}
 				$isEmpty = false;
 			}
@@ -541,7 +569,10 @@ EOM;
 			}
 		}
 
-		$query = \Elastica\Query::create($query);
+		/**
+		 * @var Query
+		 */
+		$query = Query::create($query);
 		$query->setSize($size);
 		$query->setFrom($start);
 		$query->setExplain(true);

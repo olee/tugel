@@ -96,11 +96,20 @@ fos_elastica:
                 norms:
                   enabled: true
               license:
-                type: string
-                store: true
-                analyzer: standard
-                norms:
-                  enabled: false
+                type: multi_field
+                fields:
+                  license:
+                    type: string
+                    store: true
+                    analyzer: standard
+                    norms:
+                      enabled: false
+                  licenseNotAnalyzed:
+                    type: string
+                    store: false
+                    index: not_analyzed
+                    norms:
+                      enabled: false
               languages:
                 type: string
                 store: true
@@ -122,8 +131,6 @@ fos_elastica:
                       enabled: false
               namespaces:
                 type: multi_field
-                norms:
-                  enabled: false
                 fields:
                   namespaces:
                     type: string
@@ -139,8 +146,6 @@ fos_elastica:
                       enabled: true
               classes:
                 type: multi_field
-                norms:
-                  enabled: false
                 fields:
                   classes:
                     type: string
@@ -154,9 +159,25 @@ fos_elastica:
                     analyzer: camelcase_english
                     norms:
                       enabled: true
+              combinedTags:
+                type: multi_field
+                fields:
+                  combinedTags:
+                    type: string
+                    store: false
+                    analyzer: camelcase
+                    norms:
+                      enabled: true
+                  combinedTagsAnalyzed:
+                    type: string
+                    store: false
+                    analyzer: camelcase_english
+                    norms:
+                      enabled: true
             persistence:
               driver: orm
               model: Tugel\TugelBundle\Entity\Package
-              provider: ~
+              provider:
+                batch_size: 100
               listener: ~
               finder: ~

@@ -233,6 +233,10 @@ class Package {
 		return WEB_DIRECTORY . '../tmp/' . $this->getPlatform()->getName() . '/' . str_replace(':', '_', $this->getName()) . '/';
 	}
 
+	public function getCombinedTags() {
+		return trim($this->classes . ' ' . $this->namespaces);
+	}
+
 	/*******************************************************************/
 
 	/**

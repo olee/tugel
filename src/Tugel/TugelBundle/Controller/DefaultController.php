@@ -24,7 +24,16 @@ use ssko\UtilityBundle\Core\ControllerHelperNT;
 use Tugel\TugelBundle\Form\SearchType;
 use Tugel\TugelBundle\Form\SimpleSearchType;
 
+use Tugel\TugelBundle\Entity\Package;
+use Tugel\TugelBundle\Entity\Platform;
+
 use Tugel\TugelBundle\Model\PackageManager;
+use Tugel\TugelBundle\Model\AbstractPlatform;
+
+use Elastica\Client;
+use Elastica\Index;
+use Elastica\Type;
+use Elastica\Document;
 
 class DefaultController extends ControllerHelperNT {
 		
@@ -152,24 +161,7 @@ class DefaultController extends ControllerHelperNT {
 	public function infoAction($id = null) {
 		if ($id == null)
 			return $this->redirect($this->generateUrl('home'));
-		
-		$package = $this->getPackageManager()->getPackage($id);
-		if (!$package)
-			return $this->redirect($this->generateUrl('home'));
-		$params = array('package' => $package);
-		
-		
-		if ($this->getContainer()->getParameter('kernel.environment') == 'dev') {
-			$pm = $this->getPackageManager();
-			$query = $pm->parseQuery($q);
-			if ($request->query->has('g'))
-				$groups[] = strtolower($request->query->get('g'));
-			$results = $pm->find($query, $request->query->get('c', 10), $request->query->get('p', 0) * $request->query->get('c', 10));
-			
-			$params['el_response'] = json_encode($pm->lastResponse, JSON_PRETTY_PRINT);
-		}
-		
-		return $params;
+		return $this->renderInfo($request, $this->getPackageManager()->getPackage($id));
 	}
 		
 	/**
@@ -177,17 +169,40 @@ class DefaultController extends ControllerHelperNT {
 	 * @Template
 	 * @Cache(expires="+1 days", public=true)
 	 */
-	public function infoNamedAction($platform, $package) {
+	public function infoNamedAction(Request $request, $platform, $package) {
 		//echo "$platform\n$package\n"; exit;
 		if ($platform == null || $package == null)
 			return $this->redirect($this->generateUrl('home'));
-		
 		$platform = $this->getPackageManager()->getPlatformManager()->get($platform);
-		$pkg = $platform->getPackage($package);
-		if (!$pkg)
+		return $this->renderInfo($request, $platform->getPackage($package));
+	}
+	
+	public function renderInfo(Request $request, Package $package) {
+		if (!$package)
 			return $this->redirect($this->generateUrl('home'));
+		$params = array('package' => $package);
 		
-		return $this->render('TugelBundle:Default:info.html.twig', array('package' => $pkg));
+		if ($this->container->getParameter('kernel.environment') == 'dev' && $request->query->has('q')) {
+			$pm = $this->getPackageManager();
+			$query = $pm->parseQuery($request->query->get('q'));
+			if ($request->query->has('g'))
+				$groups[] = strtolower($request->query->get('g'));
+			$results = $pm->find($query, 1);
+			
+			$client = new Client(array('host' => 'localhost', 'port' => 9200));
+			$index = $client->getIndex('tugel');
+			$type = $index->getType('package');
+			$document = $type->getDocument($package->getId());
+			
+			unset($pm->lastQuery['size']);
+			unset($pm->lastQuery['from']);
+			unset($pm->lastQuery['explain']);
+			
+			$path = $index->getName() . '/' . $type->getName() . '/' . $document->getId() . '/_explain';
+			$response = $client->request($path, \Elastica\Request::GET, $pm->lastQuery);
+			$params['explain'] = $response->getData();
+		}
+		return $this->render('TugelBundle:Default:info.html.twig', $params);
 	}
 
 	/**

@@ -6,76 +6,101 @@
 {{ parent() }}
 <div class="container">
 	<h1>Statistics</h1>
+	{#<pre>{{ stats_ }}</pre>#}
 	
-	{{ accordion.start('Licenses', 'licenses', false) }}
-		<ul>
-{% for pkg in licenses if pkg._count > 4 %}
-			<li><span class="badge">{{ pkg._count }}</span> <a href="{{ path('search', {q:'license:\'' ~ pkg.license ~ '\''}) }}">{{ pkg.license ? pkg.license : 'NONE' }}</a>
-{% endfor %}
-		</ul>
-
-	{{ accordion.tab('Tags') }}
-		<ul>
-{#% for tag in tags if tag._count > 20 %}
-			<li><span class="badge">{{ tag.count }}</span> <a href="{{ path('search', {q:tag.name}) }}">{{ tag.name }}</a>
-{% endfor %#}
-		</ul>
-
-{% for id,platform in platforms %}
-		{{ accordion.tab(id|capitalize) }}
+{% for platform in platforms %}
+	{% if loop.first %}{{ accordion.start(platform.name|capitalize, null, true) }}{% else %}{{ accordion.tab(platform.name|capitalize) }}{% endif %}
 		<div>Package count: {{ platform.count }}</div>
 		<div>Indexed package count: {{ platform.indexed_count }}</div>
 		<div>Error package count: {{ platform.error_count }}</div>
-		<h4>Last added:</h4>
-		<div class="table-responsive">
-			<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-				<thead>
-					<tr>
-						<th style="width:66px;">ID</th>
-						<th style="width:250px;">Name</th>
-						<th style="width:150px;">Added date</th>
-						<th style="width:120px;">Latest version</th>
-						<th class="desc">Description</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for package in platform.last_added %}
-					<tr>
-						<td>{{ package.id }}</td>
-						<td><a href="{{ package.url }}">{{ package.name }}</a></td>
-						<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
-						<td>{{ package.version }}</td>
-						<td class="desc">{{ package.description|raw }}</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		</div>
-		<h4>Last indexed:</h4>
-		<div class="table-responsive">
-			<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
-				<thead>
-					<tr>
-						<th style="width:66px;">ID</th>
-						<th style="width:250px;">Name</th>
-						<th style="width:150px;">Indexed date</th>
-						<th style="width:120px;">Latest version</th>
-						<th class="desc" style="min-width:100px;">Description</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for package in platform.last_indexed %}
-					<tr>
-						<td>{{ package.id }}</td>
-						<td><a href="{{ package.url }}">{{ package.name }}</a></td>
-						<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
-						<td>{{ package.version }}</td>
-						<td class="desc">{{ package.description|raw }}</td>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		</div>
+		<br>
+		{{ accordion.start('Most common tags', null, true) }}
+			{% set items = platform.stats.combinedTags.buckets %}
+			<div class="row taglist">
+				{%- for i in 0..2 %}
+				<div class="col-sm-4">
+					<table>
+						<tbody>
+							{%- for tag in items %}{% if loop.index >= items|length / 3 * i and loop.index <= items|length / 3 * (i + 1) %}
+							<tr>
+								<td><span class="badge">{{ tag.doc_count }}</span></td>
+								<td><a href="{{ path('search', {q:tag.key}) }}">{{ tag.key }}</a></td>
+							</tr>
+							{%- endif %}{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				{%- endfor %}
+			</div>
+		{{ accordion.tab('Most common licenses:') }}
+			{% set items = platform.stats.licenses.buckets %}
+			<div class="row taglist">
+				{%- for i in 0..2 %}
+				<div class="col-sm-4">
+					<table>
+						<tbody>
+							{%- for tag in items %}{% if loop.index >= items|length / 3 * i and loop.index <= items|length / 3 * (i + 1) %}
+							<tr>
+								<td><span class="badge">{{ tag.doc_count }}</span></td>
+								<td><a href="{{ path('search', {q:'license:\'' ~ tag.key ~ '\''}) }}">{{ tag.key }}</a></td>
+							</tr>
+							{%- endif %}{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				{%- endfor %}
+			</div>
+		{{ accordion.tab('Last added packages') }}
+			<div class="table-responsive">
+				<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
+					<thead>
+						<tr>
+							<th style="width:66px;">ID</th>
+							<th style="width:250px;">Name</th>
+							<th style="width:150px;">Added date</th>
+							<th style="width:120px;">Latest version</th>
+							<th class="desc">Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for package in platform.last_added %}
+						<tr>
+							<td>{{ package.id }}</td>
+							<td><a href="{{ package.url }}">{{ package.name }}</a></td>
+							<td>{{ package.addedDate|date('Y-m-d H:m:s') }}</td>
+							<td>{{ package.version }}</td>
+							<td class="desc">{{ package.description|raw }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{{ accordion.tab('Last indexed packages') }}
+			<div class="table-responsive">
+				<table class="packagetbl table table-condensed table-hover table-striped table-bordered">
+					<thead>
+						<tr>
+							<th style="width:66px;">ID</th>
+							<th style="width:250px;">Name</th>
+							<th style="width:150px;">Indexed date</th>
+							<th style="width:120px;">Latest version</th>
+							<th class="desc" style="min-width:100px;">Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for package in platform.last_indexed %}
+						<tr>
+							<td>{{ package.id }}</td>
+							<td><a href="{{ package.url }}">{{ package.name }}</a></td>
+							<td>{{ package.indexedDate|date('Y-m-d H:m:s') }}</td>
+							<td>{{ package.version }}</td>
+							<td class="desc">{{ package.description|raw }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{{ accordion.end() }}
 {% endfor %}
 	{{ accordion.end() }}
 </div>

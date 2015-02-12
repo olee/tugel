@@ -1,5 +1,7 @@
 {% extends "TugelBundle::layout.html.twig" %}
 
+{% import "TugelBundle:Form:jsonTree.html.twig" as tree %}
+
 {% block content %}
 <div class="container">
 	<h2><a href="{{ package.url }}">{{ package.name }}</a></h2>
@@ -69,6 +71,7 @@
 				</div>
 			</div>
 		</div>
+		{% if explain is defined %}<br>{{ tree.tree(explain) }}{% endif %}
 	</div>
 </div>
 {% endblock %}
