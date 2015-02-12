@@ -125,41 +125,12 @@ class Package {
 	/*******************************************************************/
 
 	/**
-	 * @var \Doctrine\Common\Collections\Collection
-	 *
-	 * @ORM\OneToMany(targetEntity="PackageTag", mappedBy="package", fetch="EXTRA_LAZY", cascade={"all"}, orphanRemoval=true)
-	 * @ORM\OrderBy({"count" = "DESC"})
-	 * @JMS\Groups({"details"})
-	 */
-	private $tags;
-
-	/**
-	 * @var string
-	 *
-	 * @ORM\Column(name="tags", type="text", nullable=true)
-	 * @JMS\Exclude
-	 */
-	private $tagsText;
-
-	/*******************************************************************/
-
-	/**
 	 * @var string
 	 *
 	 * @ORM\Column(name="license", type="string", length=255, nullable=true)
 	 * @JMS\Groups({"details"})
 	 */
 	private $license;
-
-	/*******************************************************************/
-	
-	/**
-	 * @var string
-	 *
-	 * @ORM\Column(name="namespaces", type="text", nullable=true)
-	 * @JMS\Groups({"details"})
-	 */
-	private $namespaces;
 
 	/**
 	 * @var string
@@ -168,6 +139,14 @@ class Package {
 	 * @JMS\Groups({"details"})
 	 */
 	private $classes;
+	
+	/**
+	 * @var string
+	 *
+	 * @ORM\Column(name="namespaces", type="text", nullable=true)
+	 * @JMS\Groups({"details"})
+	 */
+	private $namespaces;
 
 	/**
 	 * @var string
@@ -491,37 +470,6 @@ class Package {
 	/*******************************************************************/
 
 	/**
-	 * Add packageTags
-	 *
-	 * @param \Tugel\TugelBundle\Entity\PackageTag $packageTags
-	 * @return Package
-	 */
-	public function addTag(\Tugel\TugelBundle\Entity\PackageTag $packageTags) {
-		$this->tags[] = $packageTags;
-		return $this;
-	}
-
-	/**
-	 * Remove packageTag
-	 *
-	 * @param \Tugel\TugelBundle\Entity\PackageTag $packageTag
-	 */
-	public function removeTag(\Tugel\TugelBundle\Entity\PackageTag $packageTag) {
-		$this->tags->removeElement($packageTag);
-	}
-
-	/**
-	 * Get packageTags
-	 *
-	 * @return \Doctrine\Common\Collections\Collection
-	 */
-	public function getTags() {
-		return $this->tags;
-	}
-
-	/*******************************************************************/
-
-	/**
 	 * Set languages
 	 *
 	 * @param string $languages
@@ -539,28 +487,6 @@ class Package {
 	 */
 	public function getLanguages() {
 		return $this->languages;
-	}
-
-	/*******************************************************************/
-
-	/**
-	 * Set tagsText
-	 *
-	 * @param string $tagsText
-	 * @return Package
-	 */
-	public function setTagsText($tagsText) {
-		$this->tagsText = $tagsText;
-		return $this;
-	}
-
-	/**
-	 * Get tagsText
-	 *
-	 * @return string
-	 */
-	public function getTagsText() {
-		return $this->tagsText;
 	}
 
 	/*******************************************************************/

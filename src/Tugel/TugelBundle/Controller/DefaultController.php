@@ -182,7 +182,7 @@ class DefaultController extends ControllerHelperNT {
 		if (!$package)
 			return $this->redirect($this->generateUrl('home'));
 		
-		// Get tags
+		// Get total tags based on classes and namespaces
 		$tags = Utils::splitTags($package->getClasses() . ' ' . $package->getNamespaces());
 		arsort($tags);
 		

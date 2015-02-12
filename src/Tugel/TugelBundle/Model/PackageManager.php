@@ -205,7 +205,7 @@ EOM;
 		if ($force)
 			$qb->set('pkg.error', AbstractPlatform::ERR_NEEDS_REINDEXING);
 		if ($clear)
-			$qb->set('pkg.classes', null)->set('pkg.namespaces', null)->set('pkg.tagsText', null)->set('pkg.languages', null)->set('pkg.codeTagsMaximum', null);
+			$qb->set('pkg.classes', null)->set('pkg.namespaces', null)->set('pkg.languages', null);
 		
 		if ($platform) {
 			if (!is_object($platform))

@@ -17,7 +17,6 @@ use Tugel\TugelBundle\Model\Language;
 use Tugel\TugelBundle\Entity\Platform as Platform;
 use Tugel\TugelBundle\Entity\Package;
 use Tugel\TugelBundle\Entity\Tag;
-use Tugel\TugelBundle\Entity\PackageTag;
 
 use Tugel\TugelBundle\Util\Utils;
 
@@ -328,36 +327,7 @@ abstract class AbstractPlatform {
 		$package->setClasses($index->getClassesString());
 		$package->setNamespaces($index->getNamespacesString());
 		$package->setLanguages($index->getLanguagesString());
-		$package->setTagsText($index->getTagsString());
-		
-		{
-			$tags = array();
-			preg_match_all(Utils::CAMEL_CASE_PATTERN, $index->getTagsString(), $matches);
-			foreach ($matches[0] as $tag) {
-				Utils::array_add($tags, strtolower($tag));
-			}
-
-			foreach ($package->getTags() as $pt) {
-				$tag = $pt->getName();
-				if (array_key_exists($tag, $tags)) {
-					$pt->setCount($tags[$tag]);
-					unset($tags[$tag]);
-				} else {
-					$package->removeTag($pt);
-					$this->getEntityManager()->remove($pt);
-				}
-			}
-		
-			foreach ($tags as $tag => $count) {
-				$tagEnt = $this->tagRepo->findOneByName($tag);
-				if (!$tagEnt) {
-					$tagEnt = new Tag($tag);
-					$this->getEntityManager()->persist($tagEnt);
-					if (!$dry) $this->getEntityManager()->flush();
-				}
-				$package->addTag(new PackageTag($package, $tagEnt, $count));
-			}
-		}
+		//$package->setTagsText($index->getTagsString());
 	}
 
 	public function clearIndex(Package $package) {
