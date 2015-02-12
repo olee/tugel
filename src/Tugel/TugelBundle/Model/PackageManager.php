@@ -294,55 +294,32 @@ EOM;
 	}
 	
 	public function getStats() {
-		$data = array(
-			'platforms' => array(),
-		);
+		$platforms = array();
 		
-		$data['licenses'] = $this->packageRepository->createQueryBuilder('pkg')
-			->select('pkg.license, LOWER(pkg.license) as _group', 'COUNT(pkg.license) AS _count') //
-			->groupBy('_group') //
-			->addOrderBy('_count', 'DESC') //
-			->addOrderBy('pkg.license', 'ASC') //
-			->getQuery()->getResult();
-		
-		/*
-		echo $this->getEntityManager()->getRepository('TugelBundle:Tag')->createQueryBuilder('tag')
-			->select('tag.name', 'SUM(pt.count) AS _count', 'IDENTITY(pkg.platform)') //
-			->join('TugelBundle:PackageTag', 'pt', 'WITH', 'tag.id = pt.tag') //
-			->join('TugelBundle:Package', 'pkg', 'WITH', 'pkg.id = pt.package') //
-			->addGroupBy('pkg.platform') //
-			->addGroupBy('tag.id') //
-			->addOrderBy('_count', 'DESC') //
-			->addOrderBy('tag.name', 'ASC') //
-			->setMaxResults(20) //
-			->getQuery()->getSql();
-		exit;
-		
-		$data['tags'] = $this->getEntityManager()->getRepository('TugelBundle:CodeTag')->createQueryBuilder('tag')
-			->select('tag.name', 'SUM(tag.count)') //
-			->groupBy('tag.name') //
-			->addOrderBy('tag.count', 'DESC') //
-			->addOrderBy('tag.name', 'ASC') //
-			->setMaxResults(20) //
-			->getQuery()->getResult();
-		/* */
-
-
 		$classesAgg = new \Elastica\Aggregation\Terms('combinedTags');
 		$classesAgg->setField('combinedTags')->setSize(40);
+		
 		$licensesAgg = new \Elastica\Aggregation\Terms('licenses');
 		$licensesAgg->setField('licenseNotAnalyzed')->setSize(40);
+
+		$platformAgg = new \Elastica\Aggregation\Terms('platform');
+		$platformAgg->setField('platform.id')->addAggregation($classesAgg)->addAggregation($licensesAgg);
 		
+		$query = Query::create(null)->addAggregation($classesAgg)->addAggregation($licensesAgg)->addAggregation($platformAgg);
+		$aggregations = $this->packageIndex->search($query)->getAggregations();
+		
+		// Get global statistics
 		$platformData = array();
-		$platformData['stats'] = $this->packageIndex->search(Query::create(null)->addAggregation($classesAgg)->addAggregation($licensesAgg))->getAggregations();
+		$platformData['stats'] = $aggregations;
 		$platformData['name'] = 'Global statistics';
 		$platformData['count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->getQuery()->getSingleScalarResult();
 		$platformData['indexed_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->andWhere('pkg.version IS NOT NULL')->andWhere('pkg.error IS NULL')->getQuery()->getSingleScalarResult();
 		$platformData['error_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->andWhere('pkg.error IS NOT NULL')->getQuery()->getSingleScalarResult();
 		$platformData['last_added'] = $this->packageRepository->createQueryBuilder('pkg')->orderBy('pkg.addedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
 		$platformData['last_indexed'] = $this->packageRepository->createQueryBuilder('pkg')->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
-		$data['platforms'][0] = $platformData;
+		$platforms[0] = $platformData;
 		
+		// Get platform-specific statistics
 		foreach ($this->getEntityManager()->getRepository('TugelBundle:Platform')->findBy(array(), array('name' => 'ASC')) as $platform) {
 			$platformData = array();
 			$platformData['name'] = $platform->getName();
@@ -351,20 +328,16 @@ EOM;
 			$platformData['error_count'] = (int) $this->packageRepository->createQueryBuilder('pkg')->select('count(pkg)')->where('pkg.platform = ' . $platform->getId())->andWhere('pkg.error IS NOT NULL')->getQuery()->getSingleScalarResult();
 			$platformData['last_added'] = $this->packageRepository->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.addedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
 			$platformData['last_indexed'] = $this->packageRepository->createQueryBuilder('pkg')->where('pkg.platform = ' . $platform->getId())->orderBy('pkg.indexedDate', 'DESC')->setMaxResults(10)->getQuery()->getResult();
-			$data['platforms'][$platform->getId()] = $platformData;
+			$platforms[$platform->getId()] = $platformData;
+		}
+		foreach ($aggregations['platform']['buckets'] as $stat) {
+			$platforms[$stat['key']]['stats'] = $stat;
 		}
 
-		$platformAgg = new \Elastica\Aggregation\Terms('platform');
-		$platformAgg->setField('platform.id')->addAggregation($classesAgg)->addAggregation($licensesAgg);
-		$stats = $this->packageIndex->search(Query::create(null)->addAggregation($platformAgg))->getAggregations();
-		
-		foreach ($stats['platform']['buckets'] as $stat) {
-			$data['platforms'][$stat['key']]['stats'] = $stat;
-		}
-		$data['stats_'] = print_r($stats, true);
-
-
-		return $data;
+		return array(
+			'stats_' => print_r($aggregations, true),
+			'platforms' => $platforms,
+		);
 	}
 
 	/*******************************************************************/
