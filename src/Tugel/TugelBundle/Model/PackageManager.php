@@ -67,11 +67,6 @@ EOM;
 	private $packageRepository;
 	
 	/**
-	 * @var EntityRepository
-	 */
-	private $tagRepository;
-
-	/**
 	 * @var Type
 	 */
 	private $packageIndex;
@@ -112,7 +107,6 @@ EOM;
 		
 		$this->finderHelper = new TransformedFinderHelper($this->finder);
 		$this->packageRepository = $this->getEntityManager()->getRepository('TugelBundle:Package');
-		$this->tagRepository = $this->getEntityManager()->getRepository('TugelBundle:Tag');
 		
 		$sm = $this->getEntityManager()->getConnection()->getSchemaManager();
 		if (!$this->viewExists('new_packages')) {

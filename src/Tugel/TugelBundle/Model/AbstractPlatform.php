@@ -90,11 +90,6 @@ abstract class AbstractPlatform {
 	protected $packageRepo;
 
 	/**
-	 * @var EntityRepository
-	 */
-	protected $tagRepo;
-
-	/**
 	 * @var QueryBuilder
 	 */
 	protected $packageQb;
@@ -108,7 +103,6 @@ abstract class AbstractPlatform {
 		$this->languageManager = $languageManager;
 		$this->platformRepo = $this->getEntityManager()->getRepository('TugelBundle:Platform');
 		$this->packageRepo = $this->getEntityManager()->getRepository('TugelBundle:Package');
-		$this->tagRepo = $this->getEntityManager()->getRepository('TugelBundle:Tag');
 		
 		$this->packageQb = $this->packageRepo->createQueryBuilder('e');
 		$this->packageQb->where('e.platform = ?1');
