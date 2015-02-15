@@ -266,10 +266,21 @@ abstract class AbstractPlatform {
 
 		// Get package name if it's case-sensitive
 		if (!empty($package->data[AbstractPlatform::PKG_NAME])) {
+			$name = $package->data[AbstractPlatform::PKG_NAME];
 			if ($this->isCaseInsensitive())
-				$package->setName(strtolower($package->data[AbstractPlatform::PKG_NAME]));
-			else
-				$package->setName($package->data[AbstractPlatform::PKG_NAME]);
+				$name = strtolower($name);
+			if ($name != $package->getName()) {
+				$otherPackage = $this->getPackage($name);
+				if ($otherPackage) {
+					$this->log('Removing as duplicate of ' . $otherPackage->getName(), $package, Logger::WARNING);
+					$otherPackage->setNew(true);
+					$this->getEntityManager()->remove($package);
+					$this->getEntityManager()->flush();
+					return false;
+				} else {
+					$package->setName($name);
+				}
+			}
 		}
 
 		// Check if a version was found
