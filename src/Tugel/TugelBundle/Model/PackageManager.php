@@ -389,6 +389,7 @@ EOM;
 		if (is_array($query)) {
 			$isEmpty = true;
 			$q = new Bool();
+			$q->setParam('disable_coord', 'true');
 			$filters = array();
 			
 			if (!empty($query['platform'])) {
@@ -502,7 +503,7 @@ EOM;
 					$q->addMust($functionQuery);
 					/**/
 					
-					/**/
+					/*
 					$match = new MultiMatch();
 					$match->setType('most_fields');
 					//$match->setType('best_fields'); $match->setTieBreaker(0.3);
@@ -516,6 +517,26 @@ EOM;
 						'namespacesAnalyzed^0.3',
 					));
 					$q->addShould($match);
+					/**/
+					
+					/**/
+					$match = new Match();
+					$q->addShould($match->setFieldQuery('name', $query['query'])->setFieldBoost('name', 0.2));
+					
+					$match = new Match();
+					$q->addShould($match->setFieldQuery('description', $query['query'])->setFieldBoost('description', 1));
+					
+					$match = new Match();
+					$q->addShould($match->setFieldQuery('classes', $query['query'])->setFieldBoost('classes', 0.6));
+					
+					$match = new Match();
+					$q->addShould($match->setFieldQuery('classesAnalyzed', $query['query'])->setFieldBoost('classesAnalyzed', 0.6));
+					
+					$match = new Match();
+					$q->addShould($match->setFieldQuery('namespaces', $query['query'])->setFieldBoost('namespaces', 0.3));
+					
+					$match = new Match();
+					$q->addShould($match->setFieldQuery('namespacesAnalyzed', $query['query'])->setFieldBoost('namespacesAnalyzed', 0.3));
 					/**/
 				}
 				$isEmpty = false;
@@ -646,7 +667,8 @@ EOM;
 	 * Checks, if a view exists
 	 */
 	private function viewExists($name) {
-		return array_key_exists($name, $this->getEntityManager()->getConnection()->getSchemaManager()->listViews());
+		$views = $this->getEntityManager()->getConnection()->getSchemaManager()->listViews();
+		return isset($views[$name]);
 	}
 
 	/*******************************************************************/
@@ -692,10 +714,10 @@ EOM;
 	public static function mergeIndex(&$index, $index2)
 	{
 		foreach ($index2 as $lang => $types) {
-			if (!array_key_exists($lang, $index))
+			if (!isset($index[$lang]))
 				$index[$lang] = array();
 			foreach ($types as $type => $identifiers) {
-				if (!array_key_exists($type, $index[$lang]))
+				if (!isset($index[$lang][$type]))
 					$index[$lang][$type] = array();
 				foreach ($identifiers as $ident => $count)
 					Utils::array_add($index[$lang][$type], $ident, $count);
@@ -713,7 +735,7 @@ EOM;
 		foreach ($index as $lang => $types) {
 			foreach ($types as $type => $identifiers) {
 				if ($type == 'tags') {
-					if (!array_key_exists($type, $result))
+					if (!isset($result[$type]))
 						$result[$type] = array();
 					foreach ($identifiers as $identifier => $count) {
 						Utils::array_add($result[$type], strtolower($identifier), $count);

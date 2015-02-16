@@ -63,7 +63,7 @@ class TestCommand extends ContainerAwareCommand {
 			$package = $package[0];
 
 			$license = $package->getLicense();
-			if (array_key_exists($license, $cache)) {
+			if (isset($cache[$license])) {
 				$license = $cache[$license];
 			} else {
 				$license = str_replace('-', ' ', $license);

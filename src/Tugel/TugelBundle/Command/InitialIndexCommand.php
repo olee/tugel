@@ -61,7 +61,7 @@ class InitialIndexCommand extends ContainerAwareCommand {
 
 				//$platform->getEntityManager()->merge($platform->getPlatformReference());
 
-				foreach ($packages as $packageUri) {
+				foreach ($packages as &$packageUri) {
 					$package = $platform->getPackage($packageUri);
 					if (!$package) {
 						$package = new Package();
@@ -172,7 +172,7 @@ class InitialIndexCommand extends ContainerAwareCommand {
 		$rootPackages = array(//
 		'org', 'com', //
 		);
-		foreach ($rootPackages as $rootPackage) {
+		foreach ($rootPackages as &$rootPackage) {
 			$platform->log('Namespace ' . $rootPackage . '.*', $platform);
 			$index = 0;
 			while (true) {
@@ -199,7 +199,7 @@ class InitialIndexCommand extends ContainerAwareCommand {
 					break;
 				}
 
-				foreach ($data->response->docs as $packageData) {
+				foreach ($data->response->docs as &$packageData) {
 					$packageUri = $packageData->id;
 					$package = $platform->getPackage($packageUri);
 					if (!$package) {

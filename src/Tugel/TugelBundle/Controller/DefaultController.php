@@ -61,12 +61,19 @@ class DefaultController extends ControllerHelperNT {
 		
 		$pm = $this->getPackageManager();
 		$query = $pm->parseQuery($q);
-		$results = $pm->find($query, 20, $request->query->get('page', 0) * 20);
+		$results = $pm->find($query, $request->query->get('c', 10), $request->query->get('page', 0) * $request->query->get('c', 10));
+		
+		/*foreach ($pm->lastResponse['hits']['hits'] as &$hit) {
+			unset($hit['_source']['namespaces']);
+			unset($hit['_source']['classes']);
+			unset($hit['_source']['combinedTags']);
+		}*/
+		
 		$params = array(
 			'results' => $results,
 			'query' => $query,
-			'el_query' => json_encode($pm->lastQuery, JSON_PRETTY_PRINT),
-			'el_response' => json_encode($pm->lastResponse, JSON_PRETTY_PRINT),
+			'el_query' => $pm->lastQuery,
+			//'el_response' => $pm->lastResponse,
 			'time' => $pm->lastQueryTime
 		);
 		return $this->render('TugelBundle:Default:search.html.twig', $params);
@@ -157,7 +164,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/info/{id}", name="info", requirements={"id"="\d+"})
 	 * @Template
-	 * @Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 days", public=true)
 	 */
 	public function infoAction($id = null) {
 		if ($id == null)
@@ -168,7 +175,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/info/{platform}/{package}", name="info_named", requirements={"package"=".*"})
 	 * @Template
-	 * @Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 days", public=true)
 	 */
 	public function infoNamedAction(Request $request, $platform, $package) {
 		//echo "$platform\n$package\n"; exit;

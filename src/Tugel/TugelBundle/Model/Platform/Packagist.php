@@ -92,7 +92,7 @@ class Packagist extends AbstractPlatform {
 			}
 		}
 
-		if (array_key_exists('dev-master', $data['package']['versions'])) 
+		if (isset($data['package']['versions']['dev-master'])) 
 			$lastestVersion = 'dev-master';
 		
 		// Get basic package information
@@ -104,10 +104,10 @@ class Packagist extends AbstractPlatform {
 		if ($lastestVersion) {
 			// Get master version reference
 			$versionData = $data['package']['versions'][$lastestVersion];
-			$package->data[AbstractPlatform::PKG_VERSION_REF] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : $versionData['dist']['reference'];
-			$package->data[AbstractPlatform::PKG_GITHUB_ARCHIVE] = array_key_exists('dist', $versionData) ? $versionData['dist']['url'] : null;
-			$package->data[AbstractPlatform::PKG_GIT] = array_key_exists('source', $versionData) ? $versionData['source']['url'] : null;
-			$package->data[AbstractPlatform::PKG_GIT_REF] = array_key_exists('source', $versionData) ? $versionData['source']['reference'] : null;
+			$package->data[AbstractPlatform::PKG_VERSION_REF] = isset($versionData['source']) ? $versionData['source']['reference'] : $versionData['dist']['reference'];
+			$package->data[AbstractPlatform::PKG_GITHUB_ARCHIVE] = isset($versionData['dist']) ? $versionData['dist']['url'] : null;
+			$package->data[AbstractPlatform::PKG_GIT] = isset($versionData['source']) ? $versionData['source']['url'] : null;
+			$package->data[AbstractPlatform::PKG_GIT_REF] = isset($versionData['source']) ? $versionData['source']['reference'] : null;
 			if (isset($versionData['require']))
 				$package->data[AbstractPlatform::PKG_DEPENDENCIES] = $versionData['require'];
 			if (isset($versionData['license']))

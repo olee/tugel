@@ -21,7 +21,8 @@ class Index {
 	}
 
 	public function addNamespace($namespace) {
-		Utils::array_add($this->namespaces, $namespace);
+		//Utils::array_add($this->namespaces, $namespace);
+		$this->namespaces[$namespace] = 1;
 		return $this;
 	}
 

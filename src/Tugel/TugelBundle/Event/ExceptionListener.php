@@ -49,16 +49,16 @@ class ExceptionListener extends ContainerAwareHelperNT {
 		$line = $e->getLine();
 		while (true) {
 			$result[] = sprintf(' at %s%s%s(%s%s%s)', 
-				count($trace) && array_key_exists('class', $trace[0]) ? str_replace('\\', '.', $trace[0]['class']) : '', 
-				count($trace) && array_key_exists('class', $trace[0]) && array_key_exists('function', $trace[0]) ? '.' : '', 
-				count($trace) && array_key_exists('function', $trace[0]) ? str_replace('\\', '.', $trace[0]['function']) : '(main)', 
+				count($trace) && isset($trace[0]['class']) ? str_replace('\\', '.', $trace[0]['class']) : '', 
+				count($trace) && isset($trace[0]['class']) && isset($trace[0]['function']) ? '.' : '', 
+				count($trace) && isset($trace[0]['function']) ? str_replace('\\', '.', $trace[0]['function']) : '(main)', 
 				$line === null ? $file : basename($file), 
 				$line === null ? '' : ':', 
 				$line === null ? '' : $line);
 			if (!count($trace))
 				break;
-			$file = array_key_exists('file', $trace[0]) ? $trace[0]['file'] : 'Unknown Source';
-			$line = array_key_exists('file', $trace[0]) && array_key_exists('line', $trace[0]) && $trace[0]['line'] ? $trace[0]['line'] : null;
+			$file = isset($trace[0]['file']) ? $trace[0]['file'] : 'Unknown Source';
+			$line = isset($trace[0]['file']) && isset($trace[0]['line']) && $trace[0]['line'] ? $trace[0]['line'] : null;
 			array_shift($trace);
 
 			$current = "$file:$line";

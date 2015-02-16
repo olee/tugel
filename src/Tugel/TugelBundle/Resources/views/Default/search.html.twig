@@ -1,5 +1,7 @@
 {% extends "TugelBundle::layout.html.twig" %}
 
+{% import "TugelBundle:Form:jsonTree.html.twig" as tree %}
+
 {% block content %}
 <div class="container">
 {% if results is defined %}
@@ -36,8 +38,8 @@
 		<hr>
 		<p>Query time: {{ time }}</p>
 		{% if app.environment == 'dev' %}
-		<pre>{{ el_query }}</pre>
-		<pre>{{ el_response }}</pre>
+			{% if el_query is defined %}{{ tree.tree(el_query) }}{% endif %}
+			{% if el_response is defined %}{{ tree.tree(el_response) }}{% endif %}
 		{% endif %}
 	</ul>
 {% else %}

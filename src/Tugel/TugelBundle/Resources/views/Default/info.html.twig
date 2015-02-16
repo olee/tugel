@@ -35,7 +35,7 @@
 						{% for pkg in package.dependencies %}
 						<li>
 							<a href="{{ path('info_named', {platform:pkg.platform.name, package:pkg.name}) }}">{{ pkg.name }}</a>
-							{% endfor %}
+						{% endfor %}
 					</ul>
 				</div>
 			</div>
@@ -51,7 +51,7 @@
 						{% for pkg in package.dependencyOf %}
 						<li>
 							<a href="{{ path('info_named', {platform:pkg.platform.name, package:pkg.name}) }}">{{ pkg.name }}</a>
-							{% endfor %}
+						{% endfor %}
 					</ul>
 				</div>
 			</div>
@@ -63,6 +63,11 @@
 			</a>
 			<div id="tags" class="panel-collapse collapse" role="tabpanel">
 				<div class="panel-body">
+					{% set length = 3 * 400 %}
+					{% if tags|length > length %}
+						<h4>Too many tags! Displaying only first {{ length }} tags.</h4>
+						{% set tags = tags|slice(0, length) %}
+					{% endif %}
 					<div class="row taglist">
 						{% set cnt = (tags|length / 3)|round(0, 'ceil') %}
 						{%- for i in 0..2 %}

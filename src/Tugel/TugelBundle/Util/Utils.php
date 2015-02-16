@@ -13,12 +13,11 @@ class Utils {
 			Utils::array_add($tags, strtolower($tag));
 		return $tags;
 	}
-	
-	public static function array_add(&$array, $key, $value = 1)
-	{
-		if (is_null($array))
-			$array = array();
-		if (array_key_exists($key, $array))
+
+	public static function array_add(&$array, $key, $value = 1) {
+		//if (is_null($array))
+		//	$array = array();
+		if (isset($array[$key]))
 			$array[$key] += $value;
 		else
 			$array[$key] = $value;
@@ -33,7 +32,7 @@ class Utils {
 	}
 
 	public static function rawurlEncode($url) {
-	    return str_replace(array('%3A', '%2F'), array(':', '/'), rawurlencode($url));
+		return str_replace(array('%3A', '%2F'), array(':', '/'), rawurlencode($url));
 	}
 
 	public static function tailFile($filepath, $lines = 1, $adaptive = true) {

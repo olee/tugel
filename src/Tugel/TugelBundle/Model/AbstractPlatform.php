@@ -159,7 +159,7 @@ abstract class AbstractPlatform {
 				return false;
 			// Check, if version is the same as the last one indexed (master-versions)
 			if (!$package->getError() && $package->getVersion() == $package->data[AbstractPlatform::PKG_VERSION]) {
-				if (!array_key_exists(AbstractPlatform::PKG_VERSION_REF, $package->data) || $package->data[AbstractPlatform::PKG_VERSION_REF] == $package->getVersionReference()) {
+				if (!isset($package->data[AbstractPlatform::PKG_VERSION_REF]) || $package->data[AbstractPlatform::PKG_VERSION_REF] == $package->getVersionReference()) {
 					$this->log('Same version', $package, Logger::INFO);
 					if (!$dry)
 						$package->setNew(0);
@@ -217,7 +217,7 @@ abstract class AbstractPlatform {
 	public function getCacheVersion(Package $package, $cachePath) {
 		$cacheIdFile = $cachePath . 'tugel_repository';
 		$cacheVersion = file_exists($cacheIdFile) ? file_get_contents($cacheIdFile) : false;
-		if (array_key_exists(AbstractPlatform::PKG_VERSION_REF, $package->data) && $package->data[AbstractPlatform::PKG_VERSION_REF] != $package->getVersionReference()) {
+		if (isset($package->data[AbstractPlatform::PKG_VERSION_REF]) && $package->data[AbstractPlatform::PKG_VERSION_REF] != $package->getVersionReference()) {
 			$cacheVersion = false;
 			$package->setVersionReference($package->data[AbstractPlatform::PKG_VERSION_REF]);
 		}
@@ -284,7 +284,7 @@ abstract class AbstractPlatform {
 		}
 
 		// Check if a version was found
-		if (!array_key_exists(AbstractPlatform::PKG_VERSION, $package->data) || !$package->data[AbstractPlatform::PKG_VERSION]) {
+		if (!isset($package->data[AbstractPlatform::PKG_VERSION]) || !$package->data[AbstractPlatform::PKG_VERSION]) {
 			$this->log('No version found', $package, Logger::WARNING);
 			$package->setError(AbstractPlatform::ERR_VERSION_NOT_FOUND);
 			return false;
@@ -322,6 +322,12 @@ abstract class AbstractPlatform {
 			}
 		}
 		
+		// Add filler-tag
+		//while (array_sum($index->getClasses()) < 20)
+		//	$index->addClass('QITXZ');
+		//while (array_sum($index->getNamespaces()) < 20)
+		//	$index->addNamespace('QITXZ');
+		
 		// Tag namespaces, classes, etc.
 		$index->tagData();
 		
@@ -332,7 +338,6 @@ abstract class AbstractPlatform {
 		$package->setClasses($index->getClassesString());
 		$package->setNamespaces($index->getNamespacesString());
 		$package->setLanguages($index->getLanguagesString());
-		//$package->setTagsText($index->getTagsString());
 	}
 
 	public function clearIndex(Package $package) {
@@ -601,7 +606,7 @@ abstract class AbstractPlatform {
 }
 
 function array_get($array, $index) {
-	if (array_key_exists($index, $array))
+	if (isset($array[$index]))
 		return $array[$index];
 	else
 		return null;
