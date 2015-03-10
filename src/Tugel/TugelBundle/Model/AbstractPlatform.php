@@ -155,8 +155,15 @@ abstract class AbstractPlatform {
 
 		// Check package data
 		if (!$quick) {
+			// Clear old package data
+			$package->setDescription(null);
+			$package->setLicense(null);
+			$package->getDependencies()->clear();
+			
+			// Get new package data and check for errors
 			if (!$this->getPackageData($package))
 				return false;
+			
 			// Check, if version is the same as the last one indexed (master-versions)
 			if (!$package->getError() && $package->getVersion() == $package->data[AbstractPlatform::PKG_VERSION]) {
 				if (!isset($package->data[AbstractPlatform::PKG_VERSION_REF]) || $package->data[AbstractPlatform::PKG_VERSION_REF] == $package->getVersionReference()) {
@@ -169,6 +176,10 @@ abstract class AbstractPlatform {
 			$package->setVersion($package->data[AbstractPlatform::PKG_VERSION]);
 		}
 
+		$package->setError(null);
+		$package->setNew(false);
+		$package->setIndexedDate(new \DateTime());
+		
 		// Download package data
 		$path = $package->getCachePath();
 		$cacheVersion = $this->getCacheVersion($package, $path);
@@ -189,10 +200,6 @@ abstract class AbstractPlatform {
 		
 		// Index package
 		$this->indexFiles($package, $path, $dry);
-		
-		$package->setError(null);
-		$package->setNew(false);
-		$package->setIndexedDate(new \DateTime());
 		
 		if ($dry) {
 			$this->getEntityManager()->refresh($package);

@@ -41,6 +41,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/", name="home")
 	 * @Template
+	 * @Cache(expires="+1 hours", public=true)
 	 */
 	public function indexAction() {
 		return array();
@@ -49,7 +50,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/search", name="search")
 	 * @Template
-	 * -@Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 hours", public=true)
 	 */
 	public function searchAction(Request $request) {
 		if (!$request->query->has('q'))
@@ -81,7 +82,7 @@ class DefaultController extends ControllerHelperNT {
 		
 	/**
 	 * @Route("/suggest", name="suggest")
-	 * -@Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 hours", public=true)
 	 */
 	public function suggestAction(Request $request) {
 		if (!$request->query->has('q')) {
@@ -98,7 +99,7 @@ class DefaultController extends ControllerHelperNT {
 	
 	/**
 	 * @Route("/suggest_prefetch", name="suggest_prefetch")
-	 * -@Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 hours", public=true)
 	 */
 	public function suggestPrefetchAction(Request $request) {
 		$pm = $this->getPackageManager();
@@ -128,7 +129,7 @@ class DefaultController extends ControllerHelperNT {
 		
 	/**
 	 * @Route("/search.json", name="search_json")
-	 * -@Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 hours", public=true)
 	 */
 	public function searchJsonAction(Request $request) {
 		$groups = array('Default');
@@ -164,7 +165,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/info/{id}", name="info", requirements={"id"="\d+"})
 	 * @Template
-	 * -@Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 hours", public=true)
 	 */
 	public function infoAction($id = null) {
 		if ($id == null)
@@ -175,7 +176,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/info/{platform}/{package}", name="info_named", requirements={"package"=".*"})
 	 * @Template
-	 * -@Cache(expires="+1 days", public=true)
+	 * -@Cache(expires="+1 hours", public=true)
 	 */
 	public function infoNamedAction(Request $request, $platform, $package) {
 		//echo "$platform\n$package\n"; exit;
@@ -225,7 +226,7 @@ class DefaultController extends ControllerHelperNT {
 	/**
 	 * @Route("/stats", name="stats")
 	 * @Template
-	 * @Cache(expires="+1 days", public=true)
+	 * @Cache(expires="+1 hours", public=true)
 	 */
 	public function statsAction() {
 		return $this->getPackageManager()->getStats();

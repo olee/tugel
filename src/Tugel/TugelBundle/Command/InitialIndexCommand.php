@@ -36,55 +36,35 @@ class InitialIndexCommand extends ContainerAwareCommand {
 		if (!$platform)
 			throw new \RuntimeException();
 
-		$platform->log('started crawling', $platform);
+		$packages = json_decode(file_get_contents('packagist.json'));
+		if (!$packages) {
+			$platform->log('error adding packages', $platform, Logger::WARNING);
+			return;
+		}
 
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Requested-With: XMLHttpRequest', ));
+		$platform->log('started adding packages', $platform);
 
-		set_time_limit(60 * 60);
+		$cnt = 0;
+		foreach ($packages->packageNames as $packageUri) {
+			$package = $platform->getPackage($packageUri);
+			if (!$package) {
+				$package = new Package();
+				$package->setName($packageUri);
+				$package->setPlatform($platform->getPlatformReference());
+				$platform->getEntityManager()->persist($package);
 
-		$letter = 'a';
-		do {
-			for ($page = 1; $page <= 200; $page++) {
-				$platform->log('LETTER ' . $letter . ' PAGE ' . $page, $platform);
-
-				curl_setopt($ch, CURLOPT_URL, 'https://packagist.org/search/?search_query%5Bquery%5D=' . $letter . '&page=' . $page);
-				$src = curl_exec($ch);
-				$status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-				if ($status != 200)
-					break;
-
-				preg_match_all('@/packages/([^"]*)"@i', $src, $matches);
-				$packages = array_unique($matches[1]);
-
-				//$platform->getEntityManager()->merge($platform->getPlatformReference());
-
-				foreach ($packages as &$packageUri) {
-					$package = $platform->getPackage($packageUri);
-					if (!$package) {
-						$package = new Package();
-						$package->setName($packageUri);
-						$package->setPlatform($platform->getPlatformReference());
-						$platform->getEntityManager()->persist($package);
-
-						$platform->log('Package added', $package);
-					} else {
-						//$package->setNew(true);
-						//$platform->log('Package updated', $package);
-					}
+				$platform->log('Package added', $package);
+				if ($cnt++ > 200) {
+					$platform->getEntityManager()->flush();
+					$platform->getEntityManager()->clear();
+					$cnt = 0;
 				}
-
-				$platform->getEntityManager()->flush();
-				$platform->getEntityManager()->clear();
+			} else {
+				//$platform->log('Package already exists', $package);
 			}
-			$letter++;
-		} while ($letter != 'z');
-		curl_close($ch);
-
-		//$platform->getEntityManager()->flush();
-		$platform->log('finished crawling', $platform);
+		}
+		$platform->getEntityManager()->flush();
+		$platform->log('finished adding packages', $platform);
 	}
 
 	protected function indexPypi() {
@@ -118,7 +98,7 @@ class InitialIndexCommand extends ContainerAwareCommand {
 			}
 		}
 		$platform->getEntityManager()->flush();
-		$platform->log('finished crawling', $platform);
+		$platform->log('finished adding packages', $platform);
 	}
 
 	protected function indexHackage() {
@@ -152,7 +132,7 @@ class InitialIndexCommand extends ContainerAwareCommand {
 			}
 		}
 		$platform->getEntityManager()->flush();
-		$platform->log('finished crawling', $platform);
+		$platform->log('finished adding packages', $platform);
 	}
 
 	protected function indexMaven() {
@@ -223,7 +203,7 @@ class InitialIndexCommand extends ContainerAwareCommand {
 		curl_close($ch);
 
 		//$platform->getEntityManager()->flush();
-		$platform->log('finished crawling', $platform);
+		$platform->log('finished adding packages', $platform);
 	}
 
 	/**

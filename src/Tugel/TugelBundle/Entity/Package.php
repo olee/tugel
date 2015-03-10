@@ -201,7 +201,12 @@ class Package {
 	 * @return boolean
 	 */
 	public function isIndexed() {
-		return $this->version && (!$this->error || $this->error == AbstractPlatform::ERR_NEEDS_REINDEXING);
+		return $this->version && (
+			!$this->error || 
+			$this->error == AbstractPlatform::ERR_NEEDS_REINDEXING || 
+			$this->error == AbstractPlatform::ERR_DOWNLOAD_NOT_FOUND ||
+			$this->error == AbstractPlatform::ERR_DOWNLOAD_ERROR
+		);
 	}
 
 	public function getUrl() {

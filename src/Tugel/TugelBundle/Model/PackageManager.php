@@ -290,16 +290,16 @@ EOM;
 	public function getStats() {
 		$platforms = array();
 		
-		$classesAgg = new \Elastica\Aggregation\Terms('combinedTags');
-		$classesAgg->setField('combinedTags')->setSize(39);
+		$tagsAgg = new \Elastica\Aggregation\Terms('combinedTags');
+		$tagsAgg->setField('combinedTags')->setSize(39);
 		
 		$licensesAgg = new \Elastica\Aggregation\Terms('licenses');
 		$licensesAgg->setField('licenseNotAnalyzed')->setSize(39);
 
 		$platformAgg = new \Elastica\Aggregation\Terms('platform');
-		$platformAgg->setField('platform.id')->addAggregation($classesAgg)->addAggregation($licensesAgg);
+		$platformAgg->setField('platform.id')->addAggregation($tagsAgg)->addAggregation($licensesAgg);
 		
-		$query = Query::create(null)->addAggregation($classesAgg)->addAggregation($licensesAgg)->addAggregation($platformAgg);
+		$query = Query::create(null)->addAggregation($tagsAgg)->addAggregation($licensesAgg)->addAggregation($platformAgg);
 		$aggregations = $this->packageIndex->search($query)->getAggregations();
 		
 		// Get global statistics
