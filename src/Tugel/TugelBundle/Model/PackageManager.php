@@ -20,6 +20,7 @@ use Elastica\Query\MultiMatch;
 use Elastica\Filter\BoolAnd;
 use Elastica\Filter\AbstractMulti;
 use Elastica\Filter\Term as TermFilter;
+use Elastica\Filter\Query as QueryFilter;
 
 use ssko\UtilityBundle\Core\ContainerAwareHelperNT;
 
@@ -413,7 +414,10 @@ EOM;
 				$match = new Match();
 				$match->setFieldQuery('languages', $query['language']);
 				$match->setFieldOperator('languages', 'and');
-				$q->addMust($match);
+				//$q->addMust($match);
+				$filter = new QueryFilter();
+				$filter->setQuery($match);
+				$filters[] = $filter;
 				$isEmpty = false;
 			}
 			
@@ -421,7 +425,20 @@ EOM;
 				$match = new Match();
 				$match->setFieldQuery('dependencies.name', $query['depends']);
 				$match->setFieldOperator('dependencies.name', 'and');
-				$q->addMust($match);
+				//$q->addMust($match);
+				$filter = new QueryFilter();
+				$filter->setQuery($match);
+				$filters[] = $filter;
+				$isEmpty = false;
+			}
+			
+			if (!empty($query['license'])) {
+				$match = new Match();
+				$match->setFieldQuery('license', $query['license']);
+				//$q->addMust($match);
+				$filter = new QueryFilter();
+				$filter->setQuery($match);
+				$filters[] = $filter;
 				$isEmpty = false;
 			}
 			
@@ -436,13 +453,6 @@ EOM;
 				$match = new Match();
 				$match->setFieldQuery('classes', $query['class']);
 				$q->addShould($match);
-				$isEmpty = false;
-			}
-			
-			if (!empty($query['license'])) {
-				$match = new Match();
-				$match->setFieldQuery('license', $query['license']);
-				$q->addMust($match);
 				$isEmpty = false;
 			}
 			
