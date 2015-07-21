@@ -167,7 +167,7 @@ class DefaultController extends ControllerHelperNT {
 	 * @Template
 	 * -@Cache(expires="+1 hours", public=true)
 	 */
-	public function infoAction($id = null) {
+	public function infoAction(Request $request, $id = null) {
 		if ($id == null)
 			return $this->redirect($this->generateUrl('home'));
 		return $this->renderInfo($request, $this->getPackageManager()->getPackage($id));
